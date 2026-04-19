@@ -32,6 +32,38 @@ export class ProductsController {
     return this.productsService.findAll();
   }
 
+  @ApiOperation({ summary: 'Get products by country' })
+  @ApiParam({ name: 'country', type: String, example: 'UK' })
+  @ApiOkResponse({ description: 'List of products filtered by country' })
+  @Get('country/:country')
+  findByCountry(@Param('country') country: string) {
+    return this.productsService.findByCountry(country);
+  }
+
+  @ApiOperation({ summary: 'Get products by genre' })
+  @ApiParam({ name: 'genre', type: String, example: 'Progressive Rock' })
+  @ApiOkResponse({ description: 'List of products filtered by genre' })
+  @Get('genre/:genre')
+  findByGenre(@Param('genre') genre: string) {
+    return this.productsService.findByGenre(genre);
+  }
+
+  @ApiOperation({ summary: 'Get products by artist' })
+  @ApiParam({ name: 'artist', type: String, example: 'Pink Floyd' })
+  @ApiOkResponse({ description: 'List of products filtered by artist' })
+  @Get('artist/:artist')
+  findByArtist(@Param('artist') artist: string) {
+    return this.productsService.findByArtist(artist);
+  }
+
+  @ApiOperation({ summary: 'Get products by label' })
+  @ApiParam({ name: 'label', type: String, example: 'Harvest Records' })
+  @ApiOkResponse({ description: 'List of products filtered by label' })
+  @Get('label/:label')
+  findByLabel(@Param('label') label: string) {
+    return this.productsService.findByLabel(label);
+  }
+
   @ApiOperation({ summary: 'Get product by id' })
   @ApiParam({ name: 'id', type: Number, example: 1 })
   @ApiOkResponse({ description: 'Product details' })

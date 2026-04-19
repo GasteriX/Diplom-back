@@ -14,6 +14,9 @@ export class CreateProductDto {
   @ApiProperty({ example: 5 })
   stock!: number;
 
+  @ApiProperty({ example: 'UK' })
+  country!: string;
+
   @ApiProperty({ example: 'Pink Floyd' })
   artistName!: string;
 

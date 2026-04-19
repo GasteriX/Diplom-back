@@ -14,6 +14,9 @@ export class UpdateProductDto {
   @ApiPropertyOptional({ example: 3 })
   stock?: number;
 
+  @ApiPropertyOptional({ example: 'UK' })
+  country?: string;
+
   @ApiPropertyOptional({ example: 'Pink Floyd' })
   artistName?: string;
 

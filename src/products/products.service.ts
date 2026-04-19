@@ -35,6 +35,38 @@ export class ProductsService {
     return products;
   }
 
+  async findByCountry(country: string) {
+    this.logger.log(`Fetching products by country "${country}"`);
+    return this.productsRepo.find({
+      where: { country },
+      relations: ['artist', 'genre', 'label', 'tracks'],
+    });
+  }
+
+  async findByGenre(genreName: string) {
+    this.logger.log(`Fetching products by genre "${genreName}"`);
+    return this.productsRepo.find({
+      where: { genre: { name: genreName } },
+      relations: ['artist', 'genre', 'label', 'tracks'],
+    });
+  }
+
+  async findByArtist(artistName: string) {
+    this.logger.log(`Fetching products by artist "${artistName}"`);
+    return this.productsRepo.find({
+      where: { artist: { name: artistName } },
+      relations: ['artist', 'genre', 'label', 'tracks'],
+    });
+  }
+
+  async findByLabel(labelName: string) {
+    this.logger.log(`Fetching products by label "${labelName}"`);
+    return this.productsRepo.find({
+      where: { label: { name: labelName } },
+      relations: ['artist', 'genre', 'label', 'tracks'],
+    });
+  }
+
   async findOne(id: number) {
     this.logger.log(`Fetching product ${id}`);
     const product = await this.productsRepo.findOne({
@@ -112,6 +144,7 @@ export class ProductsService {
       media_type: dto.media_type,
       price: dto.price,
       stock: dto.stock,
+      country: dto.country,
       artist,
       genre,
       label,
@@ -141,6 +174,7 @@ export class ProductsService {
     if (dto.media_type !== undefined) existing.media_type = dto.media_type;
     if (dto.price !== undefined) existing.price = dto.price;
     if (dto.stock !== undefined) existing.stock = dto.stock;
+    if (dto.country !== undefined) existing.country = dto.country;
 
     // Обновляем связи (Artist, Genre, Label)
     if (dto.artistName !== undefined) {

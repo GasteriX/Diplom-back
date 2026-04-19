@@ -29,6 +29,9 @@ export class Product {
   @Column()
   stock!: number;
 
+  @Column()
+  country!: string;
+
   @ManyToOne(() => Artist, (artist) => artist.products)
   artist!: Artist;
 
