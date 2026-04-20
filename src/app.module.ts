@@ -8,6 +8,7 @@ import { Order } from './entities/order.entity';
 import { Product } from './entities/product.entity';
 import { Track } from './entities/track.entity';
 import { User } from './entities/user.entity';
+import { AuthModule } from './auth/auth.module';
 import { ProductsModule } from './products/products.module';
 
 @Module({
@@ -23,6 +24,7 @@ import { ProductsModule } from './products/products.module';
       synchronize: (process.env.DB_SYNC ?? 'false').toLowerCase() === 'true',
     }),
     ProductsModule,
+    AuthModule,
   ],
 })
 export class AppModule {}

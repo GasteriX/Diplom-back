@@ -5,10 +5,12 @@ import {
   Get,
   Param,
   ParseIntPipe,
-  Patch,
   Post,
+  Put,
+  UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiCreatedResponse,
   ApiNoContentResponse,
   ApiOkResponse,
@@ -16,6 +18,10 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
+import { UserRole } from '../entities/enums';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -72,17 +78,23 @@ export class ProductsController {
     return this.productsService.findOne(id);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({ summary: 'Create a product' })
   @ApiCreatedResponse({ description: 'Product created' })
+  @Roles(UserRole.ADMIN)
   @Post()
   create(@Body() dto: CreateProductDto) {
     return this.productsService.create(dto);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({ summary: 'Update a product' })
   @ApiParam({ name: 'id', type: Number, example: 1 })
   @ApiOkResponse({ description: 'Product updated' })
-  @Patch(':id')
+  @Roles(UserRole.ADMIN)
+  @Put(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateProductDto,
@@ -90,9 +102,12 @@ export class ProductsController {
     return this.productsService.update(id, dto);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({ summary: 'Delete a product' })
   @ApiParam({ name: 'id', type: Number, example: 1 })
   @ApiNoContentResponse({ description: 'Product deleted' })
+  @Roles(UserRole.ADMIN)
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.productsService.remove(id);

@@ -5,7 +5,7 @@ export class UpdateProductDto {
   @ApiPropertyOptional({ example: 'The Dark Side of the Moon' })
   title?: string;
 
-  @ApiPropertyOptional({ enum: ['Vinyl', 'CD', 'Cassette'], example: 'CD' })
+  @ApiPropertyOptional({ enum: ['Vinyl', 'CD', 'Cassette'], example: 'Vinyl' })
   media_type?: 'Vinyl' | 'CD' | 'Cassette';
 
   @ApiPropertyOptional({ example: 24.99 })
