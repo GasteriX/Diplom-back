@@ -13,6 +13,13 @@ import { UpdateProductDto } from './dto/update-product.dto';
 export class ProductsService {
   private readonly logger = new Logger(ProductsService.name);
 
+  private normalizeArray(values?: string[] | null): string[] {
+    if (!values?.length) {
+      return [];
+    }
+    return values.map((value) => value.trim()).filter(Boolean);
+  }
+
   constructor(
     @InjectRepository(Product)
     private readonly productsRepo: Repository<Product>,
@@ -46,7 +53,7 @@ export class ProductsService {
   async findByGenre(genreName: string) {
     this.logger.log(`Fetching products by genre "${genreName}"`);
     return this.productsRepo.find({
-      where: { genre: { name: genreName } },
+      where: [{ genre: { name: genreName } }, { genre_title: genreName }],
       relations: ['artist', 'genre', 'label', 'tracks'],
     });
   }
@@ -62,7 +69,7 @@ export class ProductsService {
   async findByLabel(labelName: string) {
     this.logger.log(`Fetching products by label "${labelName}"`);
     return this.productsRepo.find({
-      where: { label: { name: labelName } },
+      where: [{ label: { name: labelName } }, { label_title: labelName }],
       relations: ['artist', 'genre', 'label', 'tracks'],
     });
   }
@@ -134,17 +141,33 @@ export class ProductsService {
   }
 
   async create(dto: CreateProductDto) {
-    this.logger.log(`Creating product "${dto.title}"`);
-    const artist = await this.getOrCreateArtist(dto.artistName);
-    const genre = await this.getOrCreateGenre(dto.genreName);
-    const label = dto.labelName ? await this.getOrCreateLabel(dto.labelName) : null;
+    const performers = this.normalizeArray(dto.performers);
+    const artistName = dto.artistName ?? performers[0];
+    const genreName = dto.genreName ?? dto.genre;
+    const labelName = dto.labelName ?? dto.label ?? null;
+    const title = dto.recordTitle ?? dto.title ?? '';
+
+    this.logger.log(`Creating product "${title}"`);
+    const artist = await this.getOrCreateArtist(artistName ?? 'Unknown Artist');
+    const genre = await this.getOrCreateGenre(genreName ?? 'Unknown Genre');
+    const label = labelName ? await this.getOrCreateLabel(labelName) : null;
 
     const product = this.productsRepo.create({
-      title: dto.title,
+      title: title || 'Untitled',
+      record_title: dto.recordTitle ?? dto.title ?? null,
       media_type: dto.media_type,
       price: dto.price,
       stock: dto.stock,
       country: dto.country,
+      barcode: dto.barcode,
+      article: dto.article,
+      genre_title: dto.genre,
+      styles: this.normalizeArray(dto.styles),
+      label_title: dto.label ?? dto.labelName ?? null,
+      vinyl_count: dto.vinylCount,
+      performers,
+      color_features: this.normalizeArray(dto.colorFeatures),
+      release_year: dto.releaseYear,
       artist,
       genre,
       label,
@@ -170,21 +193,39 @@ export class ProductsService {
     }
 
     // Обновляем простые поля
+    if (dto.recordTitle !== undefined) {
+      existing.record_title = dto.recordTitle;
+      existing.title = dto.recordTitle;
+    }
     if (dto.title !== undefined) existing.title = dto.title;
     if (dto.media_type !== undefined) existing.media_type = dto.media_type;
     if (dto.price !== undefined) existing.price = dto.price;
     if (dto.stock !== undefined) existing.stock = dto.stock;
     if (dto.country !== undefined) existing.country = dto.country;
+    if (dto.barcode !== undefined) existing.barcode = dto.barcode;
+    if (dto.article !== undefined) existing.article = dto.article;
+    if (dto.genre !== undefined) existing.genre_title = dto.genre;
+    if (dto.styles !== undefined) existing.styles = this.normalizeArray(dto.styles);
+    if (dto.label !== undefined) existing.label_title = dto.label;
+    if (dto.vinylCount !== undefined) existing.vinyl_count = dto.vinylCount;
+    if (dto.performers !== undefined) existing.performers = this.normalizeArray(dto.performers);
+    if (dto.colorFeatures !== undefined) {
+      existing.color_features = this.normalizeArray(dto.colorFeatures);
+    }
+    if (dto.releaseYear !== undefined) existing.release_year = dto.releaseYear;
 
     // Обновляем связи (Artist, Genre, Label)
-    if (dto.artistName !== undefined) {
-      existing.artist = await this.getOrCreateArtist(dto.artistName);
+    const updateArtistName = dto.artistName ?? this.normalizeArray(dto.performers)[0];
+    if (updateArtistName) {
+      existing.artist = await this.getOrCreateArtist(updateArtistName);
     }
-    if (dto.genreName !== undefined) {
-      existing.genre = await this.getOrCreateGenre(dto.genreName);
+    const updateGenreName = dto.genreName ?? dto.genre;
+    if (updateGenreName) {
+      existing.genre = await this.getOrCreateGenre(updateGenreName);
     }
-    if (dto.labelName !== undefined) {
-      existing.label = dto.labelName ? await this.getOrCreateLabel(dto.labelName) : null;
+    const updateLabelName = dto.labelName ?? dto.label;
+    if (updateLabelName !== undefined) {
+      existing.label = updateLabelName ? await this.getOrCreateLabel(updateLabelName) : null;
     }
 
     // ЛОГИКА ОБНОВЛЕНИЯ ТРЕКОВ

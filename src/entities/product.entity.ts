@@ -20,6 +20,9 @@ export class Product {
   @Column()
   title!: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  record_title!: string | null;
+
   @Column({ type: 'enum', enum: ['Vinyl', 'CD', 'Cassette'] })
   media_type!: string;
 
@@ -31,6 +34,33 @@ export class Product {
 
   @Column()
   country!: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  barcode!: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  article!: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  genre_title!: string | null;
+
+  @Column({ type: 'simple-array', nullable: true })
+  styles!: string[] | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  label_title!: string | null;
+
+  @Column({ type: 'int', default: 1 })
+  vinyl_count!: number;
+
+  @Column({ type: 'simple-array', nullable: true })
+  performers!: string[] | null;
+
+  @Column({ type: 'simple-array', nullable: true })
+  color_features!: string[] | null;
+
+  @Column({ type: 'int', nullable: true })
+  release_year!: number | null;
 
   @ManyToOne(() => Artist, (artist) => artist.products)
   artist!: Artist;

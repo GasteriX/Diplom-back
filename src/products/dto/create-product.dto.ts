@@ -2,8 +2,11 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TrackDto } from './track.dto';
 
 export class CreateProductDto {
-  @ApiProperty({ example: 'The Dark Side of the Moon' })
-  title!: string;
+  @ApiProperty({ example: 'Starpath' })
+  recordTitle!: string;
+
+  @ApiPropertyOptional({ example: 'The Dark Side of the Moon' })
+  title?: string;
 
   @ApiProperty({ enum: ['Vinyl', 'CD', 'Cassette'], example: 'Vinyl' })
   media_type!: 'Vinyl' | 'CD' | 'Cassette';
@@ -17,13 +20,46 @@ export class CreateProductDto {
   @ApiProperty({ example: 'UK' })
   country!: string;
 
-  @ApiProperty({ example: 'Pink Floyd' })
-  artistName!: string;
+  @ApiProperty({ example: 'Rock' })
+  genre!: string;
 
-  @ApiProperty({ example: 'Progressive Rock' })
-  genreName!: string;
+  @ApiProperty({
+    type: [String],
+    example: ['Black Metal', 'Doom Metal', 'Progressive Metal', 'Symphonic Metal'],
+  })
+  styles!: string[];
 
-  @ApiPropertyOptional({ example: 'Harvest Records', nullable: true })
+  @ApiProperty({ example: '810079501328' })
+  barcode!: string;
+
+  @ApiProperty({ example: 'JPV10061' })
+  article!: string;
+
+  @ApiPropertyOptional({ example: '20 Buck Spin', nullable: true })
+  label?: string | null;
+
+  @ApiProperty({ example: 1 })
+  vinylCount!: number;
+
+  @ApiProperty({ type: [String], example: ['Dream Unending', 'Worm'] })
+  performers!: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    example: ['Neon', 'Blue', 'Album', 'Limited', 'Silver', 'Violet', 'Black'],
+  })
+  colorFeatures?: string[];
+
+  @ApiProperty({ example: 2023 })
+  releaseYear!: number;
+
+  @ApiPropertyOptional({ example: 'Dream Unending' })
+  artistName?: string;
+
+  @ApiPropertyOptional({ example: 'Rock' })
+  genreName?: string;
+
+  @ApiPropertyOptional({ example: '20 Buck Spin', nullable: true })
   labelName?: string | null;
 
   @ApiPropertyOptional({
