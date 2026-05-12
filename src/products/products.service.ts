@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { Product } from '../entities/product.entity';
 import { Artist } from '../entities/artist.entity';
 import { Genre } from '../entities/genre.entity';
@@ -70,6 +70,24 @@ export class ProductsService {
     this.logger.log(`Fetching products by label "${labelName}"`);
     return this.productsRepo.find({
       where: [{ label: { name: labelName } }, { label_title: labelName }],
+      relations: ['artist', 'genre', 'label', 'tracks'],
+    });
+  }
+
+  private escapeLikePattern(value: string): string {
+    return value.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+  }
+
+  /** Поиск по подстроке в `title` или `record_title` */
+  async findByTitle(title: string) {
+    const normalized = title.trim();
+    if (!normalized) {
+      return [];
+    }
+    const pattern = `%${this.escapeLikePattern(normalized)}%`;
+    this.logger.log(`Fetching products by title pattern "${normalized}"`);
+    return this.productsRepo.find({
+      where: [{ title: Like(pattern) }, { record_title: Like(pattern) }],
       relations: ['artist', 'genre', 'label', 'tracks'],
     });
   }

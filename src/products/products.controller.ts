@@ -70,6 +70,23 @@ export class ProductsController {
     return this.productsService.findByLabel(label);
   }
 
+  @ApiOperation({
+    summary: 'Get products by title (name)',
+    description:
+      'Substring match on `title` or `record_title`. Encode the segment in the path (e.g. `%20` for spaces).',
+  })
+  @ApiParam({
+    name: 'title',
+    type: String,
+    example: 'Dark%20Side',
+    description: 'Fragment of product title or record title',
+  })
+  @ApiOkResponse({ description: 'List of products whose title matches' })
+  @Get('title/:title')
+  findByTitle(@Param('title') title: string) {
+    return this.productsService.findByTitle(title);
+  }
+
   @ApiOperation({ summary: 'Get product by id' })
   @ApiParam({ name: 'id', type: Number, example: 1 })
   @ApiOkResponse({ description: 'Product details' })

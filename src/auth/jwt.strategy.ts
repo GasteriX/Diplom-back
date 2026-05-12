@@ -20,6 +20,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
+    if (payload.typ === 'email_verification') {
+      throw new UnauthorizedException('Invalid token');
+    }
+
     const user = await this.usersRepo.findOne({ where: { id: payload.sub } });
     if (!user) {
       throw new UnauthorizedException('Invalid token user');

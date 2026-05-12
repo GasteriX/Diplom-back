@@ -1,10 +1,20 @@
-import { Body, Controller, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { UserRole } from '../entities/enums';
@@ -21,11 +31,34 @@ import { AuthService } from './auth.service';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @ApiOperation({ summary: 'Register as regular user' })
-  @ApiCreatedResponse({ description: 'User registered with role "user"' })
+  @ApiOperation({
+    summary: 'Register as regular user',
+    description:
+      'Creates an unverified account. Use GET /auth/verify-email with the token from the verification email (or server log in dev) before logging in.',
+  })
+  @ApiCreatedResponse({
+    description:
+      'Instructions to verify email; JWT is issued only after email verification',
+  })
   @Post('register')
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
+  }
+
+  @ApiOperation({
+    summary: 'Confirm email address',
+    description:
+      'Opens from the verification link. Returns JWT access token and user profile, same shape as login.',
+  })
+  @ApiQuery({
+    name: 'token',
+    required: true,
+    description: 'JWT from the verification email (or server log in development)',
+  })
+  @ApiOkResponse({ description: 'JWT access token and user info' })
+  @Get('verify-email')
+  verifyEmail(@Query('token') token: string) {
+    return this.authService.verifyEmail(token);
   }
 
   @ApiOperation({ summary: 'Login and get JWT access token' })

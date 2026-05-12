@@ -30,6 +30,16 @@ export class User {
   })
   role!: UserRole;
 
+  @Column({ name: 'is_email_verified', type: 'boolean', default: true })
+  isEmailVerified!: boolean;
+
+  @Column({
+    name: 'email_verification_expires',
+    type: 'datetime',
+    nullable: true,
+  })
+  emailVerificationExpires!: Date | null;
+
   @OneToMany(() => Order, (order) => order.buyer)
   orders!: Order[];
 
