@@ -1,34 +1,39 @@
 import {
   BadRequestException,
   Injectable,
-  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { compare, hash } from 'bcryptjs';
+import { createHash, randomBytes } from 'crypto';
 import { Repository } from 'typeorm';
 import { UserRole } from '../entities/enums';
 import { User } from '../entities/user.entity';
+import { MailService } from '../mail/mail.service';
 import { LoginDto } from './dto/login.dto';
 import { JwtPayload } from './jwt-payload.interface';
 import { RegisterDto } from './dto/register.dto';
 import { SetRoleDto } from './dto/set-role.dto';
 
-/** Срок жизни ссылки подтверждения (минуты), совпадает с `expiresIn` JWT */
 const EMAIL_VERIFY_MINUTES = Number(
   process.env.JWT_EMAIL_VERIFY_MINUTES ?? 15,
 );
 
+const RESEND_COOLDOWN_MS = Number(
+  process.env.EMAIL_RESEND_COOLDOWN_SECONDS ?? 60,
+) * 1000;
+
 @Injectable()
 export class AuthService {
-  private readonly logger = new Logger(AuthService.name);
+  private readonly resendCooldown = new Map<string, number>();
 
   constructor(
     @InjectRepository(User)
     private readonly usersRepo: Repository<User>,
     private readonly jwtService: JwtService,
+    private readonly mailService: MailService,
   ) {}
 
   private buildAccessPayload(user: User): JwtPayload {
@@ -44,16 +49,63 @@ export class AuthService {
     return this.jwtService.signAsync(this.buildAccessPayload(user));
   }
 
-  private async signEmailVerificationToken(user: User): Promise<string> {
-    const payload: JwtPayload = {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-      typ: 'email_verification',
-    };
-    return this.jwtService.signAsync(payload, {
-      expiresIn: `${EMAIL_VERIFY_MINUTES}m`,
-    });
+  private hashVerificationToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
+  }
+
+  private generateVerificationToken(): string {
+    return randomBytes(32).toString('base64url');
+  }
+
+  private getVerificationExpiry(): Date {
+    const expiresDate = new Date();
+    expiresDate.setMinutes(expiresDate.getMinutes() + EMAIL_VERIFY_MINUTES);
+    return expiresDate;
+  }
+
+  private isVerificationExpired(user: User): boolean {
+    return (
+      !!user.emailVerificationExpires &&
+      user.emailVerificationExpires < new Date()
+    );
+  }
+
+  private buildVerificationUrl(rawToken: string): string {
+    const frontendUrl =
+      process.env.FRONTEND_URL?.replace(/\/$/, '') ??
+      process.env.APP_URL?.replace(/\/$/, '') ??
+      'http://localhost:5173';
+    return `${frontendUrl}/verify-email?token=${encodeURIComponent(rawToken)}`;
+  }
+
+  private async assignVerificationToken(user: User): Promise<string> {
+    const rawToken = this.generateVerificationToken();
+    user.emailVerificationToken = this.hashVerificationToken(rawToken);
+    user.emailVerificationExpires = this.getVerificationExpiry();
+    await this.usersRepo.save(user);
+    return rawToken;
+  }
+
+  private async sendVerificationEmail(user: User, rawToken: string) {
+    const verificationUrl = this.buildVerificationUrl(rawToken);
+    await this.mailService.sendVerificationEmail(
+      user.email,
+      user.displayName,
+      verificationUrl,
+    );
+  }
+
+  private verificationSuccessResponse(user: User) {
+    return this.signAccessToken(user).then((access_token) => ({
+      access_token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        displayName: user.displayName,
+        isEmailVerified: user.isEmailVerified,
+      },
+    }));
   }
 
   async login(dto: LoginDto) {
@@ -78,52 +130,68 @@ export class AuthService {
       );
     }
 
-    const access_token = await this.signAccessToken(user);
-
-    return {
-      access_token,
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        displayName: user.displayName,
-        isEmailVerified: user.isEmailVerified,
-      },
-    };
+    return this.verificationSuccessResponse(user);
   }
 
   async register(dto: RegisterDto) {
     const email = dto.email.trim().toLowerCase();
     const existingUser = await this.usersRepo.findOne({ where: { email } });
 
-    if (existingUser) {
+    if (existingUser?.isEmailVerified) {
       throw new BadRequestException('User with this email already exists');
     }
 
-    const expiresDate = new Date();
-    expiresDate.setMinutes(expiresDate.getMinutes() + EMAIL_VERIFY_MINUTES);
-
     const passwordHash = await hash(dto.password, 10);
-    const user = this.usersRepo.create({
-      email,
-      displayName: dto.displayName.trim(),
-      passwordHash,
-      role: UserRole.USER,
-      isEmailVerified: false,
-      emailVerificationExpires: expiresDate,
-    });
-    const savedUser = await this.usersRepo.save(user);
 
-    const verificationToken = await this.signEmailVerificationToken(savedUser);
-    const baseUrl =
-      process.env.APP_URL?.replace(/\/$/, '') ?? 'http://localhost:3000';
-    this.logger.log(
-      `Email verification for ${savedUser.email}: ${baseUrl}/auth/verify-email?token=${encodeURIComponent(verificationToken)}`,
-    );
+    let user: User;
+    if (existingUser && !existingUser.isEmailVerified) {
+      user = existingUser;
+      user.displayName = dto.displayName.trim();
+      user.passwordHash = passwordHash;
+      user.role = UserRole.USER;
+    } else {
+      user = this.usersRepo.create({
+        email,
+        displayName: dto.displayName.trim(),
+        passwordHash,
+        role: UserRole.USER,
+        isEmailVerified: false,
+      });
+    }
+
+    const savedUser = await this.usersRepo.save(user);
+    const rawToken = await this.assignVerificationToken(savedUser);
+    await this.sendVerificationEmail(savedUser, rawToken);
 
     return {
       message:
-        'Registration successful. Please check your email for the verification link (link is also printed to the server log in development).',
+        'Registration successful. Please check your email for the verification link.',
+    };
+  }
+
+  async resendVerification(email: string) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const lastSent = this.resendCooldown.get(normalizedEmail);
+    if (lastSent && Date.now() - lastSent < RESEND_COOLDOWN_MS) {
+      return {
+        message:
+          'If this email is registered and not yet verified, a new verification link has been sent.',
+      };
+    }
+
+    const user = await this.usersRepo.findOne({
+      where: { email: normalizedEmail },
+    });
+
+    if (user && !user.isEmailVerified) {
+      const rawToken = await this.assignVerificationToken(user);
+      await this.sendVerificationEmail(user, rawToken);
+      this.resendCooldown.set(normalizedEmail, Date.now());
+    }
+
+    return {
+      message:
+        'If this email is registered and not yet verified, a new verification link has been sent.',
     };
   }
 
@@ -132,30 +200,20 @@ export class AuthService {
       throw new BadRequestException('Verification token is required');
     }
 
-    let decoded: JwtPayload;
-    try {
-      decoded = this.jwtService.verify<JwtPayload>(token.trim());
-    } catch {
-      throw new UnauthorizedException('Invalid or expired verification token');
-    }
+    const tokenHash = this.hashVerificationToken(token.trim());
+    const user = await this.usersRepo.findOne({
+      where: { emailVerificationToken: tokenHash },
+    });
 
-    if (decoded.typ !== 'email_verification') {
-      throw new UnauthorizedException('Invalid verification token');
-    }
-
-    const user = await this.usersRepo.findOne({ where: { id: decoded.sub } });
     if (!user) {
-      throw new UnauthorizedException('Invalid token');
+      throw new UnauthorizedException('Invalid or expired verification token');
     }
 
     if (user.isEmailVerified) {
       throw new BadRequestException('Email already verified');
     }
 
-    if (
-      user.emailVerificationExpires &&
-      user.emailVerificationExpires < new Date()
-    ) {
+    if (this.isVerificationExpired(user)) {
       await this.usersRepo.remove(user);
       throw new UnauthorizedException(
         'Verification link has expired. Please register again.',
@@ -163,21 +221,11 @@ export class AuthService {
     }
 
     user.isEmailVerified = true;
+    user.emailVerificationToken = null;
     user.emailVerificationExpires = null;
     await this.usersRepo.save(user);
 
-    const access_token = await this.signAccessToken(user);
-
-    return {
-      access_token,
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        displayName: user.displayName,
-        isEmailVerified: user.isEmailVerified,
-      },
-    };
+    return this.verificationSuccessResponse(user);
   }
 
   async setRole(userId: string, dto: SetRoleDto) {

@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsEnum } from 'class-validator';
 import { UserRole } from '../../entities/enums';
 
 export class SetRoleDto {
@@ -7,5 +8,6 @@ export class SetRoleDto {
     enumName: 'UserRole',
     example: UserRole.ADMIN,
   })
+  @IsEnum(UserRole)
   role!: UserRole;
 }

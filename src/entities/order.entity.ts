@@ -33,6 +33,30 @@ export class Order {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   total!: string;
 
+  @Column({ type: 'varchar', length: 3, default: 'UAH' })
+  currency!: string;
+
+  @Column({
+    name: 'external_order_id',
+    type: 'varchar',
+    length: 128,
+    nullable: true,
+    unique: true,
+  })
+  externalOrderId!: string | null;
+
+  @Column({ name: 'payment_id', type: 'varchar', length: 64, nullable: true })
+  paymentId!: string | null;
+
+  @Column({ name: 'masked_card', type: 'varchar', length: 32, nullable: true })
+  maskedCard!: string | null;
+
+  @Column({ type: 'varchar', length: 128, nullable: true })
+  rectoken!: string | null;
+
+  @Column({ name: 'paid_at', type: 'datetime', nullable: true })
+  paidAt!: Date | null;
+
   @OneToMany(() => OrderItem, (item) => item.order, { cascade: true })
   items!: OrderItem[];
 

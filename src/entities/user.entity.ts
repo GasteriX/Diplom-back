@@ -30,8 +30,16 @@ export class User {
   })
   role!: UserRole;
 
-  @Column({ name: 'is_email_verified', type: 'boolean', default: true })
+  @Column({ name: 'is_email_verified', type: 'boolean', default: false })
   isEmailVerified!: boolean;
+
+  @Column({
+    name: 'email_verification_token',
+    type: 'varchar',
+    length: 64,
+    nullable: true,
+  })
+  emailVerificationToken!: string | null;
 
   @Column({
     name: 'email_verification_expires',

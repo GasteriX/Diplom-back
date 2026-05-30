@@ -28,6 +28,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user) {
       throw new UnauthorizedException('Invalid token user');
     }
+    if (!user.isEmailVerified) {
+      throw new UnauthorizedException('Email not verified');
+    }
     return {
       sub: user.id,
       email: user.email,

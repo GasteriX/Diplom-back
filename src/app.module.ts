@@ -9,6 +9,8 @@ import { Product } from './entities/product.entity';
 import { Track } from './entities/track.entity';
 import { User } from './entities/user.entity';
 import { AuthModule } from './auth/auth.module';
+import { OrdersModule } from './orders/orders.module';
+import { PaymentsModule } from './payments/payments.module';
 import { ProductsModule } from './products/products.module';
 
 @Module({
@@ -25,6 +27,8 @@ import { ProductsModule } from './products/products.module';
     }),
     ProductsModule,
     AuthModule,
+    OrdersModule,
+    PaymentsModule,
   ],
 })
 export class AppModule {}

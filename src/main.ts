@@ -1,11 +1,18 @@
 import 'reflect-metadata';
 import 'dotenv/config';
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+    }),
+  );
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Audio Marketplace API')
     .setDescription('CRUD API for marketplace products')
