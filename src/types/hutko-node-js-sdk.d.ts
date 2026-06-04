@@ -41,8 +41,18 @@ declare module 'hutko-node-js-sdk' {
     });
 
     CheckoutToken(data: HutkoCheckoutRequest): Promise<HutkoCheckoutTokenResponse>;
+    Recurring(data: HutkoRecurringRequest): Promise<HutkoCallbackPayload>;
     Status(data: { order_id: string }): Promise<HutkoCallbackPayload>;
     isValidResponse(data: HutkoCallbackPayload): boolean;
     getOrderId(): string;
+  }
+
+  export interface HutkoRecurringRequest {
+    order_id?: string;
+    order_desc: string;
+    currency: string;
+    amount: string | number;
+    rectoken: string;
+    sender_email?: string;
   }
 }

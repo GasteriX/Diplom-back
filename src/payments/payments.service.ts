@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, IsNull, Not, Repository } from 'typeorm';
 import { OrderStatus } from '../entities/enums';
 import { Order } from '../entities/order.entity';
 import { Product } from '../entities/product.entity';
@@ -70,7 +70,77 @@ export class PaymentsService {
       orderId: order.id,
       externalOrderId: order.externalOrderId,
       amount: amountMinor,
-      currency: order.currency,
+      currency: this.hutkoService.getCurrency(),
+      merchantId: this.hutkoService.getPublicConfig().merchantId,
+    };
+  }
+
+  async chargeRecurring(orderId: string, buyerId: string) {
+    const order = await this.ordersRepo.findOne({
+      where: { id: orderId, buyer: { id: buyerId } },
+      relations: ['buyer', 'items', 'items.product'],
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.status !== OrderStatus.PENDING) {
+      throw new BadRequestException('Order is not available for payment');
+    }
+
+    if (!order.externalOrderId) {
+      order.externalOrderId = this.hutkoService.buildExternalOrderId(order.id);
+      await this.ordersRepo.save(order);
+    }
+
+    const sourceOrder = await this.ordersRepo.findOne({
+      where: {
+        buyer: { id: buyerId },
+        status: OrderStatus.PAID,
+        rectoken: Not(IsNull()),
+      },
+      order: { paidAt: 'DESC' },
+    });
+
+    if (!sourceOrder?.rectoken) {
+      throw new BadRequestException(
+        'No saved card token (rectoken). Complete a card payment with required_rectoken first.',
+      );
+    }
+
+    const amountMinor = this.hutkoService.toMinorUnits(Number(order.total));
+    const orderDesc =
+      order.items
+        ?.map((item) => `${item.product.title} x${item.quantity}`)
+        .join(', ')
+        .slice(0, 1000) || `Order #${order.id}`;
+
+    const hutkoResponse = await this.hutkoService.chargeRecurring({
+      externalOrderId: order.externalOrderId,
+      amountMinor,
+      orderDesc,
+      rectoken: sourceOrder.rectoken,
+      senderEmail: order.buyer.email,
+    });
+
+    if (
+      hutkoResponse.response_status === 'success' &&
+      hutkoResponse.order_status === 'approved'
+    ) {
+      await this.handleCallback(hutkoResponse);
+    }
+
+    const updated = await this.ordersRepo.findOne({ where: { id: order.id } });
+    return {
+      orderId: updated?.id,
+      status: updated?.status,
+      paymentId: updated?.paymentId,
+      paidAt: updated?.paidAt,
+      hutko: {
+        response_status: hutkoResponse.response_status,
+        order_status: hutkoResponse.order_status,
+      },
     };
   }
 

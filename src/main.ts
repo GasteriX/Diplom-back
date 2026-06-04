@@ -1,12 +1,29 @@
 import 'reflect-metadata';
 import 'dotenv/config';
+import { join } from 'path';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  const frontendOrigins = (process.env.FRONTEND_URL ?? 'http://localhost:5173')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  app.enableCors({
+    origin: frontendOrigins,
+    credentials: true,
+  });
+
+  app.useStaticAssets(join(process.cwd(), 'public'), {
+    prefix: '/demo/',
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
@@ -15,7 +32,9 @@ async function bootstrap() {
   );
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Audio Marketplace API')
-    .setDescription('CRUD API for marketplace products')
+    .setDescription(
+      'CRUD API for marketplace products. Hutko test payments: GET /payments/config, demo page /demo/hutko-payment-demo.html',
+    )
     .setVersion('1.0')
     .addBearerAuth()
     .build();

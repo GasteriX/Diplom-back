@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hutko JS SDK — тестова оплата</title>
+    <script src="https://unpkg.com/@hutko/js-sdk"></script>
+    <style>
+      :root {
+        font-family: system-ui, sans-serif;
+        color: #111;
+        background: #f4f6f8;
+      }
+      body {
+        max-width: 520px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+      }
+      h1 {
+        font-size: 1.25rem;
+      }
+      label {
+        display: block;
+        margin: 0.75rem 0 0.25rem;
+        font-size: 0.85rem;
+      }
+      input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+      }
+      button {
+        margin-top: 1rem;
+        width: 100%;
+        padding: 0.65rem;
+        background: #1a5cff;
+        color: #fff;
+        border: 0;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 1rem;
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: wait;
+      }
+      pre {
+        background: #fff;
+        border: 1px solid #ddd;
+        padding: 0.75rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        overflow: auto;
+        white-space: pre-wrap;
+      }
+      .hint {
+        font-size: 0.8rem;
+        color: #555;
+      }
+      .error {
+        color: #b00020;
+      }
+      .ok {
+        color: #0a6b2e;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Hutko JavaScript SDK (тест)</h1>
+    <p class="hint">
+      Кроки з
+      <a
+        href="https://docs.hutko.org/uk/docs/page/step-by-step-instruction-to-accept-payments-with-javascript-sdk/"
+        target="_blank"
+        rel="noreferrer"
+        >документації Hutko</a
+      >: створіть замовлення в API → отримайте token → оплатіть карткою нижче.
+    </p>
+
+    <label>API URL (бекенд)</label>
+    <input id="apiUrl" value="http://localhost:3000" />
+
+    <label>JWT (після логіну /register + verify)</label>
+    <input id="jwt" placeholder="Bearer token без слова Bearer" />
+
+    <label>ID замовлення (orderId)</label>
+    <input id="orderId" placeholder="наприклад 1" />
+
+    <label>Номер картки (тестові реквізити Hutko)</label>
+    <input id="cardNumber" placeholder="з розділу «Тестові реквізити»" />
+
+    <label>Термін (MM/YY)</label>
+    <input id="expiry" placeholder="12/28" />
+
+    <label>CVV</label>
+    <input id="cvv" placeholder="123" maxlength="4" />
+
+    <button id="payBtn" type="button">1. Отримати token → 2. Оплатити</button>
+
+    <h2>Журнал</h2>
+    <pre id="log">Готово.</pre>
+
+    <script>
+      const logEl = document.getElementById('log');
+      const payBtn = document.getElementById('payBtn');
+
+      function log(msg, isError) {
+        const line = `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+        logEl.textContent += line;
+        if (isError) logEl.classList.add('error');
+      }
+
+      async function fetchCheckoutToken(apiUrl, jwt, orderId) {
+        const res = await fetch(
+          `${apiUrl.replace(/\/$/, '')}/payments/checkout-token/${orderId}`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${jwt}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        );
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.message || res.statusText || 'checkout-token failed');
+        }
+        return data;
+      }
+
+      function payWithHutkoSdk(token, card) {
+        return new Promise((resolve, reject) => {
+          if (typeof $checkout !== 'function') {
+            reject(new Error('@hutko/js-sdk не завантажено'));
+            return;
+          }
+
+          $checkout('Api').scope(function () {
+            this.request('api.checkout.form', 'request', {
+              payment_system: 'card',
+              token: token,
+              card_number: card.number.replace(/\s/g, ''),
+              expiry_date: card.expiry,
+              cvv2: card.cvv,
+            })
+              .done(function (model) {
+                model.sendResponse();
+                const order = model.attr('order');
+                const err = model.attr('error');
+                if (err && err.message) {
+                  reject(new Error(err.message));
+                } else {
+                  resolve(order);
+                }
+              })
+              .fail(function (model) {
+                const err = model.attr('error');
+                reject(new Error(err?.message || 'Hutko SDK payment failed'));
+              });
+          });
+        });
+      }
+
+      payBtn.addEventListener('click', async () => {
+        payBtn.disabled = true;
+        logEl.classList.remove('error', 'ok');
+        try {
+          const apiUrl = document.getElementById('apiUrl').value.trim();
+          const jwt = document.getElementById('jwt').value.trim();
+          const orderId = document.getElementById('orderId').value.trim();
+          const card = {
+            number: document.getElementById('cardNumber').value.trim(),
+            expiry: document.getElementById('expiry').value.trim(),
+            cvv: document.getElementById('cvv').value.trim(),
+          };
+
+          if (!jwt || !orderId) {
+            throw new Error('Потрібні JWT та orderId');
+          }
+          if (!card.number || !card.expiry || !card.cvv) {
+            throw new Error('Заповніть тестові дані картки');
+          }
+
+          log('Запит checkout-token…');
+          const checkout = await fetchCheckoutToken(apiUrl, jwt, orderId);
+          log(
+            `Token: ${checkout.token?.slice(0, 12)}… amount=${checkout.amount} ${checkout.currency}`,
+          );
+
+          log('Відправка картки через @hutko/js-sdk…');
+          const result = await payWithHutkoSdk(checkout.token, card);
+          log('SDK success: ' + JSON.stringify(result?.order_data || result, null, 2));
+          logEl.classList.add('ok');
+
+          log('Синхронізація статусу на бекенді…');
+          const statusRes = await fetch(
+            `${apiUrl.replace(/\/$/, '')}/payments/status/${orderId}`,
+            { headers: { Authorization: `Bearer ${jwt}` } },
+          );
+          const status = await statusRes.json();
+          log('Статус замовлення: ' + JSON.stringify(status));
+        } catch (e) {
+          log((e && e.message) || String(e), true);
+        } finally {
+          payBtn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
