@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Audio Marketplace — тестовий інтерфейс</title>
+    <script src="https://unpkg.com/@hutko/js-sdk"></script>
+    <style>
+      :root {
+        --bg: #f0f2f5;
+        --card: #fff;
+        --border: #dde1e6;
+        --text: #1a1a1a;
+        --muted: #5f6368;
+        --primary: #1a5cff;
+        --primary-hover: #1348cc;
+        --danger: #b00020;
+        --ok: #0a6b2e;
+        --radius: 10px;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        color: var(--text);
+        background: var(--bg);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+      }
+      header {
+        background: var(--card);
+        border-bottom: 1px solid var(--border);
+        padding: 1rem 1.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: center;
+        justify-content: space-between;
+      }
+      header h1 {
+        margin: 0;
+        font-size: 1.15rem;
+      }
+      .header-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
+        font-size: 0.85rem;
+      }
+      .badge {
+        padding: 0.25rem 0.6rem;
+        border-radius: 999px;
+        background: #e8f0fe;
+        color: #174ea6;
+        font-weight: 600;
+      }
+      .badge.admin {
+        background: #fce8e6;
+        color: #c5221f;
+      }
+      .badge.guest {
+        background: #f1f3f4;
+        color: var(--muted);
+      }
+      main {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 1rem 1.5rem 2rem;
+      }
+      .banner {
+        margin-bottom: 1rem;
+        padding: 0.85rem 1rem;
+        border-radius: var(--radius);
+        background: #fdecea;
+        border: 1px solid #f5c2c7;
+        font-size: 0.9rem;
+      }
+      .banner a {
+        color: var(--primary);
+        font-weight: 600;
+      }
+      nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        margin-bottom: 1rem;
+      }
+      nav button {
+        border: 1px solid var(--border);
+        background: var(--card);
+        padding: 0.45rem 0.85rem;
+        border-radius: 999px;
+        cursor: pointer;
+        font-size: 0.85rem;
+      }
+      nav button.active {
+        background: var(--primary);
+        color: #fff;
+        border-color: var(--primary);
+      }
+      nav button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      .panel {
+        display: none;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.25rem;
+      }
+      .panel.active {
+        display: block;
+      }
+      .grid-2 {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1rem;
+      }
+      .card {
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1rem;
+      }
+      .card h3 {
+        margin: 0 0 0.75rem;
+        font-size: 1rem;
+      }
+      label {
+        display: block;
+        margin: 0.65rem 0 0.25rem;
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 0.5rem 0.65rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font: inherit;
+      }
+      textarea {
+        min-height: 80px;
+        resize: vertical;
+      }
+      .btn {
+        margin-top: 0.75rem;
+        padding: 0.55rem 1rem;
+        border: 0;
+        border-radius: 6px;
+        background: var(--primary);
+        color: #fff;
+        cursor: pointer;
+        font: inherit;
+      }
+      .btn:hover {
+        background: var(--primary-hover);
+      }
+      .btn.secondary {
+        background: #eef1f5;
+        color: var(--text);
+      }
+      .btn.danger {
+        background: var(--danger);
+      }
+      .btn:disabled {
+        opacity: 0.55;
+        cursor: wait;
+      }
+      .hint {
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin: 0.35rem 0 0;
+      }
+      .products {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 0.85rem;
+        margin-top: 1rem;
+      }
+      .product {
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 0.85rem;
+      }
+      .product h4 {
+        margin: 0 0 0.35rem;
+        font-size: 0.95rem;
+      }
+      .product p {
+        margin: 0.15rem 0;
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+      .product .price {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text);
+        margin: 0.5rem 0;
+      }
+      .product-actions {
+        display: flex;
+        gap: 0.35rem;
+        flex-wrap: wrap;
+      }
+      .product-actions .btn {
+        margin-top: 0;
+        flex: 1;
+        min-width: 100px;
+        font-size: 0.8rem;
+        padding: 0.4rem 0.6rem;
+      }
+      .cart-item,
+      .order-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.65rem 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.9rem;
+      }
+      .cart-item:last-child,
+      .order-item:last-child {
+        border-bottom: 0;
+      }
+      .qty-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+      }
+      .qty-controls button {
+        width: 28px;
+        height: 28px;
+        border: 1px solid var(--border);
+        background: #fff;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .log-wrap {
+        margin-top: 1.25rem;
+      }
+      .log-wrap h2 {
+        font-size: 0.95rem;
+        margin: 0 0 0.5rem;
+      }
+      pre#log {
+        background: #111;
+        color: #d4d4d4;
+        padding: 0.85rem;
+        border-radius: var(--radius);
+        font-size: 0.75rem;
+        max-height: 220px;
+        overflow: auto;
+        white-space: pre-wrap;
+        margin: 0;
+      }
+      pre#log .err {
+        color: #ff8a80;
+      }
+      pre#log .ok {
+        color: #69f0ae;
+      }
+      .empty {
+        color: var(--muted);
+        font-size: 0.9rem;
+        padding: 1rem 0;
+      }
+      .row-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+      code {
+        background: #f1f3f4;
+        padding: 0.1rem 0.35rem;
+        border-radius: 4px;
+        font-size: 0.85em;
+      }
+      .status-paid {
+        color: var(--ok);
+        font-weight: 600;
+      }
+      .status-pending {
+        color: #e65100;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>Audio Marketplace — тестовий інтерфейс</h1>
+        <p class="hint" style="margin: 0.25rem 0 0">
+          Відкривайте через <code id="pageUrl"></code> ·
+          <a href="/api" target="_blank" rel="noreferrer">Swagger</a>
+        </p>
+      </div>
+      <div class="header-meta">
+        <label style="margin: 0">
+          API
+          <input id="apiUrl" style="width: 180px; margin-left: 0.35rem" />
+        </label>
+        <span id="userBadge" class="badge guest">Гість</span>
+        <button type="button" class="btn secondary" id="logoutBtn" hidden>Вийти</button>
+      </div>
+    </header>
+
+    <main>
+      <div id="fileWarning" class="banner" hidden></div>
+
+      <nav id="nav"></nav>
+
+      <section id="panel-auth" class="panel active">
+        <div class="grid-2">
+          <div class="card">
+            <h3>Реєстрація</h3>
+            <label>Email</label>
+            <input id="regEmail" type="email" placeholder="user@example.com" />
+            <label>Ім'я</label>
+            <input id="regName" placeholder="John Doe" />
+            <label>Пароль (мін. 8)</label>
+            <input id="regPass" type="password" />
+            <button type="button" class="btn" id="registerBtn">Зареєструватися</button>
+          </div>
+          <div class="card">
+            <h3>Вхід</h3>
+            <label>Email</label>
+            <input id="loginEmail" type="email" />
+            <label>Пароль</label>
+            <input id="loginPass" type="password" />
+            <button type="button" class="btn" id="loginBtn">Увійти</button>
+          </div>
+          <div class="card">
+            <h3>Підтвердження email</h3>
+            <p class="hint">
+              Токен з листа або з консолі сервера
+              <code>[dev] Verification email…</code>
+            </p>
+            <label>Verification token</label>
+            <input id="verifyToken" placeholder="токен з посилання" />
+            <button type="button" class="btn" id="verifyBtn">Підтвердити</button>
+            <button type="button" class="btn secondary" id="resendBtn">
+              Надіслати лист повторно
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section id="panel-catalog" class="panel">
+        <div class="row-actions">
+          <input id="filterCountry" placeholder="Країна" style="width: 120px" />
+          <input id="filterGenre" placeholder="Жанр" style="width: 120px" />
+          <input id="filterArtist" placeholder="Виконавець" style="width: 140px" />
+          <input id="filterLabel" placeholder="Лейбл" style="width: 120px" />
+          <input id="filterTitle" placeholder="Назва" style="width: 140px" />
+          <button type="button" class="btn" id="loadProductsBtn">Завантажити</button>
+        </div>
+        <div id="productsList" class="products"></div>
+      </section>
+
+      <section id="panel-cart" class="panel">
+        <div id="cartItems"></div>
+        <label>Вартість доставки</label>
+        <input id="shippingCost" type="number" min="0" step="0.01" value="0" />
+        <button type="button" class="btn" id="createOrderBtn">Оформити замовлення</button>
+        <p class="hint">Потрібен вхід у систему.</p>
+      </section>
+
+      <section id="panel-orders" class="panel">
+        <button type="button" class="btn secondary" id="refreshOrdersBtn">
+          Оновити мої замовлення
+        </button>
+        <div id="ordersList" style="margin-top: 1rem"></div>
+      </section>
+
+      <section id="panel-payment" class="panel">
+        <div class="grid-2">
+          <div class="card">
+            <h3>Оплата Hutko</h3>
+            <label>ID замовлення</label>
+            <input id="payOrderId" placeholder="1" />
+            <label>Номер картки (тест)</label>
+            <input id="cardNumber" placeholder="4444555566661111" />
+            <label>Термін MM/YY</label>
+            <input id="cardExpiry" placeholder="03/29" />
+            <label>CVV</label>
+            <input id="cardCvv" placeholder="123" maxlength="4" />
+            <button type="button" class="btn" id="payBtn">Отримати token → Оплатити</button>
+            <button type="button" class="btn secondary" id="syncStatusBtn">
+              Синхронізувати статус
+            </button>
+            <button type="button" class="btn secondary" id="recurringBtn">
+              Рекурентний платіж
+            </button>
+          </div>
+          <div class="card">
+            <h3>Конфіг Hutko</h3>
+            <button type="button" class="btn secondary" id="loadHutkoConfigBtn">
+              GET /payments/config
+            </button>
+            <pre id="hutkoConfig" class="hint" style="margin-top: 0.75rem; white-space: pre-wrap"></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="panel-admin" class="panel">
+        <div class="grid-2">
+          <div class="card">
+            <h3>Створити товар</h3>
+            <label>recordTitle *</label>
+            <input id="pRecordTitle" value="Starpath" />
+            <label>media_type *</label>
+            <select id="pMediaType">
+              <option>Vinyl</option>
+              <option>CD</option>
+              <option>Cassette</option>
+            </select>
+            <label>price *</label>
+            <input id="pPrice" type="number" step="0.01" value="29.99" />
+            <label>stock *</label>
+            <input id="pStock" type="number" value="5" />
+            <label>country *</label>
+            <input id="pCountry" value="UK" />
+            <label>genre *</label>
+            <input id="pGenre" value="Rock" />
+            <label>styles * (через кому)</label>
+            <input id="pStyles" value="Progressive Metal" />
+            <label>barcode *</label>
+            <input id="pBarcode" value="810079501328" />
+            <label>article *</label>
+            <input id="pArticle" value="JPV10061" />
+            <label>label</label>
+            <input id="pLabel" value="20 Buck Spin" />
+            <label>vinylCount *</label>
+            <input id="pVinylCount" type="number" value="1" />
+            <label>performers * (через кому)</label>
+            <input id="pPerformers" value="Dream Unending" />
+            <label>releaseYear *</label>
+            <input id="pReleaseYear" type="number" value="2023" />
+            <label>Треки (JSON, опційно)</label>
+            <textarea id="pTracks">[{"number":1,"title":"Track 1","duration":"00:03:00"}]</textarea>
+            <button type="button" class="btn" id="createProductBtn">Створити</button>
+          </div>
+          <div class="card">
+            <h3>Керування</h3>
+            <label>ID товару для видалення</label>
+            <input id="deleteProductId" type="number" />
+            <button type="button" class="btn danger" id="deleteProductBtn">Видалити товар</button>
+            <hr style="margin: 1rem 0; border: 0; border-top: 1px solid var(--border)" />
+            <label>ID користувача</label>
+            <input id="roleUserId" placeholder="1" />
+            <label>Роль</label>
+            <select id="roleValue">
+              <option value="user">user</option>
+              <option value="admin">admin</option>
+            </select>
+            <button type="button" class="btn" id="setRoleBtn">Призначити роль</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="log-wrap">
+        <h2>Журнал</h2>
+        <pre id="log"></pre>
+      </div>
+    </main>
+
+    <script>
+      const STORAGE = {
+        jwt: 'audio_marketplace_jwt',
+        user: 'audio_marketplace_user',
+        cart: 'audio_marketplace_cart',
+        api: 'audio_marketplace_api_url',
+      };
+
+      const state = {
+        jwt: localStorage.getItem(STORAGE.jwt) || '',
+        user: JSON.parse(localStorage.getItem(STORAGE.user) || 'null'),
+        cart: JSON.parse(localStorage.getItem(STORAGE.cart) || '[]'),
+        products: [],
+        orders: [],
+      };
+
+      const defaultApiUrl =
+        location.protocol === 'http:' || location.protocol === 'https:'
+          ? location.origin
+          : 'http://localhost:3000';
+
+      const isFileProtocol = location.protocol === 'file:';
+      const pageUrlEl = document.getElementById('pageUrl');
+      pageUrlEl.textContent = `${defaultApiUrl}/demo/app.html`;
+
+      const apiUrlInput = document.getElementById('apiUrl');
+      apiUrlInput.value = localStorage.getItem(STORAGE.api) || defaultApiUrl;
+
+      const logEl = document.getElementById('log');
+      const userBadge = document.getElementById('userBadge');
+      const logoutBtn = document.getElementById('logoutBtn');
+      const fileWarning = document.getElementById('fileWarning');
+
+      if (isFileProtocol) {
+        fileWarning.hidden = false;
+        fileWarning.innerHTML =
+          'Відкрийте через <a href="' +
+          defaultApiUrl +
+          '/demo/app.html">' +
+          defaultApiUrl +
+          '/demo/app.html</a> (не file://).';
+      }
+
+      const tabs = [
+        { id: 'auth', label: 'Авторизація', always: true },
+        { id: 'catalog', label: 'Каталог', always: true },
+        { id: 'cart', label: 'Кошик', auth: true },
+        { id: 'orders', label: 'Замовлення', auth: true },
+        { id: 'payment', label: 'Оплата', auth: true },
+        { id: 'admin', label: 'Адмін', admin: true },
+      ];
+
+      function normalizeApiUrl(raw) {
+        let value = (raw || '').trim() || defaultApiUrl;
+        const hashIndex = value.indexOf('#');
+        if (hashIndex !== -1) value = value.slice(0, hashIndex);
+        try {
+          const parsed = new URL(value);
+          let pathname = parsed.pathname.replace(/\/+$/, '');
+          if (pathname === '/api' || pathname.endsWith('/api')) {
+            pathname = pathname.replace(/\/api$/, '') || '';
+          }
+          parsed.pathname = pathname;
+          parsed.hash = '';
+          return `${parsed.origin}${parsed.pathname}`.replace(/\/$/, '');
+        } catch {
+          return value.replace(/#.*$/, '').replace(/\/api\/?$/, '').replace(/\/+$/, '');
+        }
+      }
+
+      function getApiUrl() {
+        const url = normalizeApiUrl(apiUrlInput.value);
+        apiUrlInput.value = url;
+        localStorage.setItem(STORAGE.api, url);
+        return url;
+      }
+
+      function log(msg, type) {
+        const time = new Date().toLocaleTimeString();
+        const span = document.createElement('span');
+        if (type === 'err') span.className = 'err';
+        if (type === 'ok') span.className = 'ok';
+        span.textContent = `[${time}] ${msg}\n`;
+        logEl.appendChild(span);
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      function saveSession() {
+        if (state.jwt) localStorage.setItem(STORAGE.jwt, state.jwt);
+        else localStorage.removeItem(STORAGE.jwt);
+        if (state.user) localStorage.setItem(STORAGE.user, JSON.stringify(state.user));
+        else localStorage.removeItem(STORAGE.user);
+        localStorage.setItem(STORAGE.cart, JSON.stringify(state.cart));
+        updateHeader();
+        renderNav();
+      }
+
+      function updateHeader() {
+        if (state.user) {
+          userBadge.textContent = `${state.user.displayName} (${state.user.role})`;
+          userBadge.className = 'badge' + (state.user.role === 'admin' ? ' admin' : '');
+          logoutBtn.hidden = false;
+        } else {
+          userBadge.textContent = 'Гість';
+          userBadge.className = 'badge guest';
+          logoutBtn.hidden = true;
+        }
+      }
+
+      function renderNav() {
+        const nav = document.getElementById('nav');
+        nav.innerHTML = '';
+        tabs.forEach((tab) => {
+          if (tab.auth && !state.jwt) return;
+          if (tab.admin && state.user?.role !== 'admin') return;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.textContent = tab.label;
+          btn.dataset.panel = tab.id;
+          if (document.getElementById('panel-' + tab.id)?.classList.contains('active')) {
+            btn.classList.add('active');
+          }
+          btn.addEventListener('click', () => showPanel(tab.id));
+          nav.appendChild(btn);
+        });
+      }
+
+      function showPanel(id) {
+        document.querySelectorAll('.panel').forEach((p) => p.classList.remove('active'));
+        document.getElementById('panel-' + id)?.classList.add('active');
+        document.querySelectorAll('nav button').forEach((b) => {
+          b.classList.toggle('active', b.dataset.panel === id);
+        });
+        if (id === 'catalog') loadProducts();
+        if (id === 'cart') renderCart();
+        if (id === 'orders') loadOrders();
+      }
+
+      async function api(path, options = {}) {
+        if (isFileProtocol) {
+          throw new Error('Відкрийте сторінку через ' + defaultApiUrl + '/demo/app.html');
+        }
+        const url = getApiUrl() + path;
+        const headers = { ...(options.headers || {}) };
+        if (state.jwt) headers.Authorization = 'Bearer ' + state.jwt.replace(/^Bearer\s+/i, '');
+        if (options.body && !headers['Content-Type']) {
+          headers['Content-Type'] = 'application/json';
+        }
+        let res;
+        try {
+          res = await fetch(url, { ...options, headers });
+        } catch {
+          throw new Error('Немає з’єднання з ' + url);
+        }
+        const text = await res.text();
+        let data;
+        try {
+          data = text ? JSON.parse(text) : {};
+        } catch {
+          data = { message: text };
+        }
+        if (!res.ok) {
+          const msg = Array.isArray(data.message)
+            ? data.message.join(', ')
+            : data.message || res.statusText;
+          throw new Error(msg || 'HTTP ' + res.status);
+        }
+        return data;
+      }
+
+      function splitCsv(value) {
+        return value
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
+      }
+
+      function renderProducts(list) {
+        const el = document.getElementById('productsList');
+        if (!list.length) {
+          el.innerHTML = '<p class="empty">Товарів немає</p>';
+          return;
+        }
+        el.innerHTML = list
+          .map((p) => {
+            const id = Number(p.id);
+            const title = p.record_title || p.title || 'Без назви';
+            const artist = p.artist?.name || (p.performers && p.performers[0]) || '—';
+            return (
+              '<article class="product" data-id="' +
+              id +
+              '">' +
+              '<h4>' +
+              escapeHtml(title) +
+              '</h4>' +
+              '<p>' +
+              escapeHtml(artist) +
+              ' · ' +
+              escapeHtml(p.media_type || '') +
+              '</p>' +
+              '<p class="price">' +
+              Number(p.price).toFixed(2) +
+              ' · stock: ' +
+              p.stock +
+              '</p>' +
+              '<div class="product-actions">' +
+              '<button type="button" class="btn" data-add="' +
+              id +
+              '">У кошик</button>' +
+              '<button type="button" class="btn secondary" data-detail="' +
+              id +
+              '">Деталі</button>' +
+              '</div></article>'
+            );
+          })
+          .join('');
+        el.querySelectorAll('[data-add]').forEach((btn) => {
+          btn.addEventListener('click', () => addToCart(Number(btn.dataset.add)));
+        });
+        el.querySelectorAll('[data-detail]').forEach((btn) => {
+          btn.addEventListener('click', () => showProductDetail(Number(btn.dataset.detail)));
+        });
+      }
+
+      function escapeHtml(s) {
+        return String(s)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+      }
+
+      async function loadProducts() {
+        try {
+          const country = document.getElementById('filterCountry').value.trim();
+          const genre = document.getElementById('filterGenre').value.trim();
+          const artist = document.getElementById('filterArtist').value.trim();
+          const label = document.getElementById('filterLabel').value.trim();
+          const title = document.getElementById('filterTitle').value.trim();
+          let path = '/products';
+          if (country) path = '/products/country/' + encodeURIComponent(country);
+          else if (genre) path = '/products/genre/' + encodeURIComponent(genre);
+          else if (artist) path = '/products/artist/' + encodeURIComponent(artist);
+          else if (label) path = '/products/label/' + encodeURIComponent(label);
+          else if (title) path = '/products/title/' + encodeURIComponent(title);
+          const list = await api(path);
+          state.products = Array.isArray(list) ? list : [list];
+          renderProducts(state.products);
+          log('Завантажено ' + state.products.length + ' товар(ів)', 'ok');
+        } catch (e) {
+          log(e.message, 'err');
+        }
+      }
+
+      async function showProductDetail(id) {
+        try {
+          const p = await api('/products/' + id);
+          log('Товар #' + id + ': ' + JSON.stringify(p, null, 2), 'ok');
+        } catch (e) {
+          log(e.message, 'err');
+        }
+      }
+
+      function addToCart(productId) {
+        const product = state.products.find((p) => Number(p.id) === productId);
+        if (!product) return;
+        const existing = state.cart.find((i) => i.productId === productId);
+        if (existing) existing.quantity += 1;
+        else
+          state.cart.push({
+            productId,
+            title: product.record_title || product.title,
+            price: Number(product.price),
+            quantity: 1,
+          });
+        saveSession();
+        log('Додано в кошик: ' + (product.record_title || product.title), 'ok');
+      }
+
+      function renderCart() {
+        const el = document.getElementById('cartItems');
+        if (!state.cart.length) {
+          el.innerHTML = '<p class="empty">Кошик порожній</p>';
+          return;
+        }
+        let total = 0;
+        el.innerHTML = state.cart
+          .map((item) => {
+            const line = item.price * item.quantity;
+            total += line;
+            return (
+              '<div class="cart-item">' +
+              '<span>' +
+              escapeHtml(item.title) +
+              ' × ' +
+              item.quantity +
+              ' = ' +
+              line.toFixed(2) +
+              '</span>' +
+              '<div class="qty-controls">' +
+              '<button type="button" data-dec="' +
+              item.productId +
+              '">−</button>' +
+              '<span>' +
+              item.quantity +
+              '</span>' +
+              '<button type="button" data-inc="' +
+              item.productId +
+              '">+</button>' +
+              '<button type="button" data-rm="' +
+              item.productId +
+              '">✕</button>' +
+              '</div></div>'
+            );
+          })
+          .join('');
+        el.innerHTML +=
+          '<p style="font-weight:700;margin-top:0.75rem">Разом: ' + total.toFixed(2) + '</p>';
+        el.querySelectorAll('[data-inc]').forEach((b) =>
+          b.addEventListener('click', () => changeQty(Number(b.dataset.inc), 1)),
+        );
+        el.querySelectorAll('[data-dec]').forEach((b) =>
+          b.addEventListener('click', () => changeQty(Number(b.dataset.dec), -1)),
+        );
+        el.querySelectorAll('[data-rm]').forEach((b) =>
+          b.addEventListener('click', () => removeFromCart(Number(b.dataset.rm))),
+        );
+      }
+
+      function changeQty(productId, delta) {
+        const item = state.cart.find((i) => i.productId === productId);
+        if (!item) return;
+        item.quantity += delta;
+        if (item.quantity <= 0) state.cart = state.cart.filter((i) => i.productId !== productId);
+        saveSession();
+        renderCart();
+      }
+
+      function removeFromCart(productId) {
+        state.cart = state.cart.filter((i) => i.productId !== productId);
+        saveSession();
+        renderCart();
+      }
+
+      async function createOrder() {
+        if (!state.jwt) {
+          log('Спочатку увійдіть', 'err');
+          return;
+        }
+        if (!state.cart.length) {
+          log('Кошик порожній', 'err');
+          return;
+        }
+        try {
+          const shippingCost = Number(document.getElementById('shippingCost').value) || 0;
+          const order = await api('/orders', {
+            method: 'POST',
+            body: JSON.stringify({
+              items: state.cart.map((i) => ({
+                productId: i.productId,
+                quantity: i.quantity,
+              })),
+              shippingCost,
+            }),
+          });
+          state.cart = [];
+          saveSession();
+          renderCart();
+          document.getElementById('payOrderId').value = order.id;
+          log('Замовлення #' + order.id + ' створено, total=' + order.total, 'ok');
+          showPanel('payment');
+        } catch (e) {
+          log(e.message, 'err');
+        }
+      }
+
+      function renderOrders() {
+        const el = document.getElementById('ordersList');
+        if (!state.orders.length) {
+          el.innerHTML = '<p class="empty">Замовлень немає</p>';
+          return;
+        }
+        el.innerHTML = state.orders
+          .map((o) => {
+            const statusClass =
+              o.status === 'paid' ? 'status-paid' : o.status === 'pending' ? 'status-pending' : '';
+            return (
+              '<div class="order-item">' +
+              '<div><strong>#' +
+              o.id +
+              '</strong> · <span class="' +
+              statusClass +
+              '">' +
+              o.status +
+              '</span><br>' +
+              '<span class="hint">total ' +
+              o.total +
+              ' ' +
+              o.currency +
+              '</span></div>' +
+              '<div class="row-actions">' +
+              '<button type="button" class="btn secondary" data-pay-order="' +
+              o.id +
+              '">Оплатити</button>' +
+              '<button type="button" class="btn secondary" data-view-order="' +
+              o.id +
+              '">Деталі</button>' +
+              '</div></div>'
+            );
+          })
+          .join('');
+        el.querySelectorAll('[data-pay-order]').forEach((b) => {
+          b.addEventListener('click', () => {
+            document.getElementById('payOrderId').value = b.dataset.payOrder;
+            showPanel('payment');
+          });
+        });
+        el.querySelectorAll('[data-view-order]').forEach((b) => {
+          b.addEventListener('click', () => viewOrder(b.dataset.viewOrder));
+        });
+      }
+
+      async function loadOrders() {
+        if (!state.jwt) return;
+        try {
+          state.orders = await api('/orders/me');
+          renderOrders();
+          log('Замовлень: ' + state.orders.length, 'ok');
+        } catch (e) {
+          log(e.message, 'err');
+        }
+      }
+
+      async function viewOrder(id) {
+        try {
+          const o = await api('/orders/' + id);
+          log('Замовлення #' + id + ': ' + JSON.stringify(o, null, 2), 'ok');
+        } catch (e) {
+          log(e.message, 'err');
+        }
+      }
+
+      function payWithHutkoSdk(token, card) {
+        return new Promise((resolve, reject) => {
+          if (typeof $checkout !== 'function') {
+            reject(new Error('@hutko/js-sdk не завантажено'));
+            return;
+          }
+          $checkout('Api').scope(function () {
+            this.request('api.checkout.form', 'request', {
+              payment_system: 'card',
+              token: token,
+              card_number: card.number.replace(/\s/g, ''),
+              expiry_date: card.expiry,
+              cvv2: card.cvv,
+            })
+              .done(function (model) {
+                model.sendResponse();
+                const err = model.attr('error');
+                if (err && err.message) reject(new Error(err.message));
+                else resolve(model.attr('order'));
+              })
+              .fail(function (model) {
+                const err = model.attr('error');
+                reject(new Error(err?.message || 'Hutko SDK failed'));
+              });
+          });
+        });
+      }
+
+      async function payOrder() {
+        const orderId = document.getElementById('payOrderId').value.trim();
+        const card = {
+          number: document.getElementById('cardNumber').value.trim(),
+          expiry: document.getElementById('cardExpiry').value.trim(),
+          cvv: document.getElementById('cardCvv').value.trim(),
+        };
+        if (!orderId || !card.number || !card.expiry || !card.cvv) {
+          log('Заповніть orderId і дані картки', 'err');
+          return;
+        }
+        try {
+          log('Запит checkout-token…');
+          const checkout = await api('/payments/checkout-token/' + orderId, { method: 'POST' });
+          log('Token отримано, amount=' + checkout.amount + ' ' + checkout.currency, 'ok');
+          log('Оплата через Hutko SDK…');
+          await payWithHutkoSdk(checkout.token, card);
+          log('SDK: успіх', 'ok');
+          const status = await api('/payments/status/' + orderId);
+          log('Статус: ' + JSON.stringify(status), 'ok');
+          loadOrders();
+        } catch (e) {
+          log(e.message, 'err');
+        }
+      }
+
+      async function syncPaymentStatus() {
+        const orderId = document.getElementById('payOrderId').value.trim();
+        if (!orderId) return log('Вкажіть orderId', 'err');
+        try {
+          const status = await api('/payments/status/' + orderId);
+          log('Статус: ' + JSON.stringify(status), 'ok');
+          loadOrders();
+        } catch (e) {
+          log(e.message, 'err');
+        }
+      }
+
+      async function chargeRecurring() {
+        const orderId = document.getElementById('payOrderId').value.trim();
+        if (!orderId) return log('Вкажіть orderId', 'err');
+        try {
+          const res = await api('/payments/recurring/' + orderId, { method: 'POST' });
+          log('Recurring: ' + JSON.stringify(res), 'ok');
+          loadOrders();
+        } catch (e) {
+          log(e.message, 'err');
+        }
+      }
+
+      function setAuthFromResponse(data) {
+        if (data.access_token) {
+          state.jwt = data.access_token;
+          state.user = data.user;
+          saveSession();
+        }
+      }
+
+      document.getElementById('registerBtn').addEventListener('click', async () => {
+        try {
+          const res = await api('/auth/register', {
+            method: 'POST',
+            body: JSON.stringify({
+              email: document.getElementById('regEmail').value.trim(),
+              displayName: document.getElementById('regName').value.trim(),
+              password: document.getElementById('regPass').value,
+            }),
+          });
+          log(res.message || 'Реєстрація OK', 'ok');
+          document.getElementById('loginEmail').value =
+            document.getElementById('regEmail').value.trim();
+        } catch (e) {
+          log(e.message, 'err');
+        }
+      });
+
+      document.getElementById('loginBtn').addEventListener('click', async () => {
+        try {
+          const data = await api('/auth/login', {
+            method: 'POST',
+            body: JSON.stringify({
+              email: document.getElementById('loginEmail').value.trim(),
+              password: document.getElementById('loginPass').value,
+            }),
+          });
+          setAuthFromResponse(data);
+          log('Вхід: ' + data.user.email, 'ok');
+        } catch (e) {
+          log(e.message, 'err');
+        }
+      });
+
+      document.getElementById('verifyBtn').addEventListener('click', async () => {
+        try {
+          const data = await api('/auth/verify-email', {
+            method: 'POST',
+            body: JSON.stringify({ token: document.getElementById('verifyToken').value.trim() }),
+          });
+          setAuthFromResponse(data);
+          log('Email підтверджено, JWT збережено', 'ok');
+        } catch (e) {
+          log(e.message, 'err');
+        }
+      });
+
+      document.getElementById('resendBtn').addEventListener('click', async () => {
+        const email =
+          document.getElementById('regEmail').value.trim() ||
+          document.getElementById('loginEmail').value.trim();
+        if (!email) return log('Вкажіть email', 'err');
+        try {
+          const res = await api('/auth/resend-verification', {
+            method: 'POST',
+            body: JSON.stringify({ email }),
+          });
+          log(res.message, 'ok');
+        } catch (e) {
+          log(e.message, 'err');
+        }
+      });
+
+      logoutBtn.addEventListener('click', () => {
+        state.jwt = '';
+        state.user = null;
+        saveSession();
+        showPanel('auth');
+        log('Вихід', 'ok');
+      });
+
+      document.getElementById('loadProductsBtn').addEventListener('click', loadProducts);
+      document.getElementById('createOrderBtn').addEventListener('click', createOrder);
+      document.getElementById('refreshOrdersBtn').addEventListener('click', loadOrders);
+      document.getElementById('payBtn').addEventListener('click', payOrder);
+      document.getElementById('syncStatusBtn').addEventListener('click', syncPaymentStatus);
+      document.getElementById('recurringBtn').addEventListener('click', chargeRecurring);
+
+      document.getElementById('loadHutkoConfigBtn').addEventListener('click', async () => {
+        try {
+          const cfg = await api('/payments/config');
+          document.getElementById('hutkoConfig').textContent = JSON.stringify(cfg, null, 2);
+          log('Hutko config OK', 'ok');
+        } catch (e) {
+          log(e.message, 'err');
+        }
+      });
+
+      document.getElementById('createProductBtn').addEventListener('click', async () => {
+        let tracks;
+        const tracksRaw = document.getElementById('pTracks').value.trim();
+        if (tracksRaw) {
+          try {
+            tracks = JSON.parse(tracksRaw);
+          } catch {
+            return log('Невірний JSON треків', 'err');
+          }
+        }
+        try {
+          const body = {
+            recordTitle: document.getElementById('pRecordTitle').value.trim(),
+            media_type: document.getElementById('pMediaType').value,
+            price: Number(document.getElementById('pPrice').value),
+            stock: Number(document.getElementById('pStock').value),
+            country: document.getElementById('pCountry').value.trim(),
+            genre: document.getElementById('pGenre').value.trim(),
+            styles: splitCsv(document.getElementById('pStyles').value),
+            barcode: document.getElementById('pBarcode').value.trim(),
+            article: document.getElementById('pArticle').value.trim(),
+            label: document.getElementById('pLabel').value.trim() || null,
+            vinylCount: Number(document.getElementById('pVinylCount').value),
+            performers: splitCsv(document.getElementById('pPerformers').value),
+            releaseYear: Number(document.getElementById('pReleaseYear').value),
+            tracks,
+          };
+          const p = await api('/products', { method: 'POST', body: JSON.stringify(body) });
+          log('Товар #' + p.id + ' створено', 'ok');
+          loadProducts();
+        } catch (e) {
+          log(e.message, 'err');
+        }
+      });
+
+      document.getElementById('deleteProductBtn').addEventListener('click', async () => {
+        const id = document.getElementById('deleteProductId').value;
+        if (!id) return log('Вкажіть ID', 'err');
+        try {
+          await api('/products/' + id, { method: 'DELETE' });
+          log('Товар #' + id + ' видалено', 'ok');
+          loadProducts();
+        } catch (e) {
+          log(e.message, 'err');
+        }
+      });
+
+      document.getElementById('setRoleBtn').addEventListener('click', async () => {
+        const userId = document.getElementById('roleUserId').value.trim();
+        const role = document.getElementById('roleValue').value;
+        if (!userId) return log('Вкажіть ID користувача', 'err');
+        try {
+          const res = await api('/auth/users/' + userId + '/role', {
+            method: 'PATCH',
+            body: JSON.stringify({ role }),
+          });
+          log('Роль оновлено: ' + JSON.stringify(res), 'ok');
+        } catch (e) {
+          log(e.message, 'err');
+        }
+      });
+
+      const urlToken = new URLSearchParams(location.search).get('token');
+      if (urlToken) {
+        document.getElementById('verifyToken').value = urlToken;
+        log('Token з URL — натисніть «Підтвердити»');
+      }
+
+      updateHeader();
+      renderNav();
+      log('Готово. Відкрийте вкладку «Авторизація» або «Каталог».');
+    </script>
+  </body>
+</html>

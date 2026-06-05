@@ -10,13 +10,30 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+  const port = process.env.PORT ? Number(process.env.PORT) : 3000;
   const frontendOrigins = (process.env.FRONTEND_URL ?? 'http://localhost:5173')
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
+  const apiOrigins = [
+    `http://localhost:${port}`,
+    `http://127.0.0.1:${port}`,
+  ];
+  const allowedOrigins = [...new Set([...frontendOrigins, ...apiOrigins])];
+  const isProduction = (process.env.NODE_ENV ?? '').toLowerCase() === 'production';
 
   app.enableCors({
-    origin: frontendOrigins,
+    origin: (origin, callback) => {
+      if (!origin || origin === 'null') {
+        callback(null, !isProduction);
+        return;
+      }
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(null, !isProduction);
+    },
     credentials: true,
   });
 
@@ -33,7 +50,7 @@ async function bootstrap() {
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Audio Marketplace API')
     .setDescription(
-      'CRUD API for marketplace products. Hutko test payments: GET /payments/config, demo page /demo/hutko-payment-demo.html',
+      'CRUD API for marketplace products. Test UI: /demo/app.html · Hutko payment: /demo/hutko-payment-demo.html',
     )
     .setVersion('1.0')
     .addBearerAuth()

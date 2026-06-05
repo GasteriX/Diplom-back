@@ -62,6 +62,18 @@
       .error {
         color: #b00020;
       }
+      .banner {
+        margin: 1rem 0;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        background: #fdecea;
+        border: 1px solid #f5c2c7;
+        font-size: 0.85rem;
+      }
+      .banner a {
+        color: #1a5cff;
+        font-weight: 600;
+      }
       .ok {
         color: #0a6b2e;
       }
@@ -80,7 +92,16 @@
     </p>
 
     <label>API URL (бекенд)</label>
-    <input id="apiUrl" value="http://localhost:3000" />
+    <input id="apiUrl" value="" placeholder="http://localhost:3000" />
+    <p class="hint">Лише корінь сервера, без <code>/api</code> і без Swagger (<code>#</code>).</p>
+
+    <div id="fileWarning" class="banner" hidden>
+      Сторінку відкрито як локальний файл (<code>file://</code>). Браузер блокує запити
+      до API. Відкрийте демо через сервер:
+      <a id="openDemoLink" href="http://localhost:3000/demo/hutko-payment-demo.html"
+        >http://localhost:3000/demo/hutko-payment-demo.html</a
+      >
+    </div>
 
     <label>JWT (після логіну /register + verify)</label>
     <input id="jwt" placeholder="Bearer token без слова Bearer" />
@@ -105,6 +126,56 @@
     <script>
       const logEl = document.getElementById('log');
       const payBtn = document.getElementById('payBtn');
+      const apiUrlInput = document.getElementById('apiUrl');
+      const fileWarning = document.getElementById('fileWarning');
+      const openDemoLink = document.getElementById('openDemoLink');
+
+      const defaultApiUrl =
+        window.location.protocol === 'http:' || window.location.protocol === 'https:'
+          ? window.location.origin
+          : 'http://localhost:3000';
+      apiUrlInput.value = defaultApiUrl;
+      openDemoLink.href = `${defaultApiUrl}/demo/hutko-payment-demo.html`;
+      openDemoLink.textContent = `${defaultApiUrl}/demo/hutko-payment-demo.html`;
+
+      const isFileProtocol = window.location.protocol === 'file:';
+      if (isFileProtocol) {
+        fileWarning.hidden = false;
+        payBtn.disabled = true;
+        payBtn.textContent = 'Спочатку відкрийте сторінку через http://localhost:3000/demo/…';
+      }
+
+      function normalizeApiUrl(raw) {
+        let value = raw.trim();
+        if (!value) {
+          return defaultApiUrl;
+        }
+
+        const hashIndex = value.indexOf('#');
+        if (hashIndex !== -1) {
+          value = value.slice(0, hashIndex);
+        }
+
+        try {
+          const parsed = new URL(value);
+          let pathname = parsed.pathname.replace(/\/+$/, '');
+          if (pathname === '/api' || pathname.endsWith('/api')) {
+            pathname = pathname.replace(/\/api$/, '') || '';
+          }
+          parsed.pathname = pathname;
+          parsed.hash = '';
+          return `${parsed.origin}${parsed.pathname}`.replace(/\/$/, '');
+        } catch {
+          return value
+            .replace(/#.*$/, '')
+            .replace(/\/api\/?$/, '')
+            .replace(/\/+$/, '');
+        }
+      }
+
+      function normalizeJwt(raw) {
+        return raw.trim().replace(/^Bearer\s+/i, '');
+      }
 
       function log(msg, isError) {
         const line = `[${new Date().toLocaleTimeString()}] ${msg}\n`;
@@ -113,16 +184,22 @@
       }
 
       async function fetchCheckoutToken(apiUrl, jwt, orderId) {
-        const res = await fetch(
-          `${apiUrl.replace(/\/$/, '')}/payments/checkout-token/${orderId}`,
-          {
+        const baseUrl = normalizeApiUrl(apiUrl);
+        const url = `${baseUrl}/payments/checkout-token/${orderId}`;
+        let res;
+        try {
+          res = await fetch(url, {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${jwt}`,
               'Content-Type': 'application/json',
             },
-          },
-        );
+          });
+        } catch (error) {
+          throw new Error(
+            `Не вдалося з’єднатися з ${url}. Перевірте, що сервер запущений, API URL збігається з адресою сторінки, і відкрийте демо через /demo/hutko-payment-demo.html`,
+          );
+        }
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
           throw new Error(data.message || res.statusText || 'checkout-token failed');
@@ -164,11 +241,19 @@
       }
 
       payBtn.addEventListener('click', async () => {
+        if (isFileProtocol) {
+          log(
+            'Відкрийте сторінку через http://localhost:3000/demo/hutko-payment-demo.html',
+            true,
+          );
+          return;
+        }
         payBtn.disabled = true;
         logEl.classList.remove('error', 'ok');
         try {
-          const apiUrl = document.getElementById('apiUrl').value.trim();
-          const jwt = document.getElementById('jwt').value.trim();
+          const apiUrl = normalizeApiUrl(document.getElementById('apiUrl').value);
+          document.getElementById('apiUrl').value = apiUrl;
+          const jwt = normalizeJwt(document.getElementById('jwt').value);
           const orderId = document.getElementById('orderId').value.trim();
           const card = {
             number: document.getElementById('cardNumber').value.trim(),
@@ -195,16 +280,17 @@
           logEl.classList.add('ok');
 
           log('Синхронізація статусу на бекенді…');
-          const statusRes = await fetch(
-            `${apiUrl.replace(/\/$/, '')}/payments/status/${orderId}`,
-            { headers: { Authorization: `Bearer ${jwt}` } },
-          );
+          const statusRes = await fetch(`${apiUrl}/payments/status/${orderId}`, {
+            headers: { Authorization: `Bearer ${jwt}` },
+          });
           const status = await statusRes.json();
           log('Статус замовлення: ' + JSON.stringify(status));
         } catch (e) {
           log((e && e.message) || String(e), true);
         } finally {
-          payBtn.disabled = false;
+          if (!isFileProtocol) {
+            payBtn.disabled = false;
+          }
         }
       });
     </script>

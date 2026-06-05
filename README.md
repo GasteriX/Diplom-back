@@ -12,6 +12,7 @@ npm start
 ```
 
 Swagger: `http://localhost:3000/api`  
+**Тестовый интерфейс (весь API):** `http://localhost:3000/demo/app.html`  
 Демо-страница оплаты: `http://localhost:3000/demo/hutko-payment-demo.html`
 
 ## Hutko: соответствие шагам документации

@@ -68,11 +68,13 @@ export class OrdersService {
       throw new NotFoundException('User not found');
     }
 
-    const productIds = dto.items.map((item) => item.productId);
+    const productIds = dto.items.map((item) => Number(item.productId));
     const products = await this.productsRepo.find({
       where: { id: In(productIds) },
     });
-    const productMap = new Map(products.map((product) => [product.id, product]));
+    const productMap = new Map(
+      products.map((product) => [Number(product.id), product]),
+    );
 
     let subtotal = 0;
     const lineItems: Array<{
@@ -83,7 +85,7 @@ export class OrdersService {
     }> = [];
 
     for (const item of dto.items) {
-      const product = productMap.get(item.productId);
+      const product = productMap.get(Number(item.productId));
       if (!product) {
         throw new BadRequestException(`Product ${item.productId} not found`);
       }
