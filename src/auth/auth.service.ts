@@ -71,11 +71,10 @@ export class AuthService {
   }
 
   private buildVerificationUrl(rawToken: string): string {
-    const frontendUrl =
-      process.env.FRONTEND_URL?.replace(/\/$/, '') ??
-      process.env.APP_URL?.replace(/\/$/, '') ??
-      'http://localhost:5173';
-    return `${frontendUrl}/verify-email?token=${encodeURIComponent(rawToken)}`;
+    const base =
+      process.env.EMAIL_VERIFICATION_URL?.replace(/\/$/, '') ??
+      `${(process.env.API_URL ?? 'http://localhost:3000').replace(/\/$/, '')}/demo/app.html`;
+    return `${base}?token=${encodeURIComponent(rawToken)}`;
   }
 
   private async assignVerificationToken(user: User): Promise<string> {

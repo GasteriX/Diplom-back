@@ -365,8 +365,6 @@
 
       <section id="panel-cart" class="panel">
         <div id="cartItems"></div>
-        <label>Вартість доставки</label>
-        <input id="shippingCost" type="number" min="0" step="0.01" value="0" />
         <button type="button" class="btn" id="createOrderBtn">Оформити замовлення</button>
         <p class="hint">Потрібен вхід у систему.</p>
       </section>
@@ -823,7 +821,6 @@
           return;
         }
         try {
-          const shippingCost = Number(document.getElementById('shippingCost').value) || 0;
           const order = await api('/orders', {
             method: 'POST',
             body: JSON.stringify({
@@ -831,7 +828,6 @@
                 productId: i.productId,
                 quantity: i.quantity,
               })),
-              shippingCost,
             }),
           });
           state.cart = [];

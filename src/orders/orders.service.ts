@@ -101,15 +101,14 @@ export class OrdersService {
       lineItems.push({ product, quantity: item.quantity, unitPrice, totalPrice });
     }
 
-    const shippingCost = dto.shippingCost ?? 0;
-    const total = subtotal + shippingCost;
+    const total = subtotal;
 
     const savedOrder = await this.dataSource.transaction(async (manager) => {
       const order = manager.create(Order, {
         buyer,
         status: OrderStatus.PENDING,
         subtotal: subtotal.toFixed(2),
-        shippingCost: shippingCost.toFixed(2),
+        shippingCost: '0.00',
         total: total.toFixed(2),
         currency: this.hutkoService.getCurrency(),
       });
