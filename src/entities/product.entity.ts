@@ -14,7 +14,7 @@ import { Track } from './track.entity';
 
 @Entity('products')
 export class Product {
-  @PrimaryGeneratedColumn({ type: 'bigint' })
+  @PrimaryGeneratedColumn({ type: 'integer' })
   id!: number;
 
   @Column()
@@ -23,7 +23,7 @@ export class Product {
   @Column({ type: 'varchar', nullable: true })
   record_title!: string | null;
 
-  @Column({ type: 'enum', enum: ['Vinyl', 'CD', 'Cassette'] })
+  @Column({ type: 'varchar' })
   media_type!: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
@@ -61,6 +61,9 @@ export class Product {
 
   @Column({ type: 'int', nullable: true })
   release_year!: number | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  image_url!: string | null;
 
   @ManyToOne(() => Artist, (artist) => artist.products)
   artist!: Artist;

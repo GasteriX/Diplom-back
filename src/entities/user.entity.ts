@@ -11,7 +11,7 @@ import { UserRole } from './enums';
 
 @Entity('users')
 export class User {
-  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
+  @PrimaryGeneratedColumn({ type: 'integer' })
   id!: string;
 
   @Column({ type: 'varchar', length: 255, unique: true })
@@ -23,11 +23,7 @@ export class User {
   @Column({ name: 'display_name', type: 'varchar', length: 120 })
   displayName!: string;
 
-  @Column({
-    type: 'enum',
-    enum: UserRole,
-    default: UserRole.USER,
-  })
+  @Column({ type: 'varchar', default: UserRole.USER })
   role!: UserRole;
 
   @Column({ name: 'is_email_verified', type: 'boolean', default: false })

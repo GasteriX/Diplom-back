@@ -289,6 +289,86 @@
         color: #e65100;
         font-weight: 600;
       }
+      .product-thumb {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+        border-radius: 6px;
+        margin-bottom: 0.5rem;
+        background: #f1f3f4;
+        border: 1px solid var(--border);
+      }
+      .product-thumb.placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+      .tracks-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        margin-top: 0.35rem;
+      }
+      .track-row {
+        display: grid;
+        grid-template-columns: 52px 1fr 92px 32px;
+        gap: 0.35rem;
+        align-items: center;
+      }
+      .track-row input {
+        padding: 0.4rem 0.5rem;
+        font-size: 0.85rem;
+      }
+      .track-row .track-remove {
+        width: 32px;
+        height: 32px;
+        border: 1px solid var(--border);
+        background: #fff;
+        border-radius: 6px;
+        cursor: pointer;
+        color: var(--danger);
+        font-size: 1rem;
+        line-height: 1;
+        padding: 0;
+      }
+      .tracks-head {
+        display: grid;
+        grid-template-columns: 52px 1fr 92px 32px;
+        gap: 0.35rem;
+        font-size: 0.7rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+      .image-field {
+        display: flex;
+        gap: 0.75rem;
+        align-items: flex-start;
+        margin-top: 0.35rem;
+      }
+      .image-preview {
+        width: 88px;
+        height: 88px;
+        flex: 0 0 88px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px dashed var(--border);
+        background: #f1f3f4;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted);
+        font-size: 0.7rem;
+        text-align: center;
+        overflow: hidden;
+      }
+      .image-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
     </style>
   </head>
   <body>
@@ -409,7 +489,8 @@
       <section id="panel-admin" class="panel">
         <div class="grid-2">
           <div class="card">
-            <h3>Створити товар</h3>
+            <h3 id="productFormTitle">Створити товар</h3>
+            <p class="hint" id="productFormMode" hidden></p>
             <label>recordTitle *</label>
             <input id="pRecordTitle" value="Starpath" />
             <label>media_type *</label>
@@ -440,9 +521,39 @@
             <input id="pPerformers" value="Dream Unending" />
             <label>releaseYear *</label>
             <input id="pReleaseYear" type="number" value="2023" />
-            <label>Треки (JSON, опційно)</label>
-            <textarea id="pTracks">[{"number":1,"title":"Track 1","duration":"00:03:00"}]</textarea>
-            <button type="button" class="btn" id="createProductBtn">Створити</button>
+
+            <label>Зображення товару (обкладинка)</label>
+            <div class="image-field">
+              <div class="image-preview" id="pImagePreview">нема<br />файлу</div>
+              <div style="flex: 1">
+                <input id="pImage" type="file" accept="image/*" />
+                <p class="hint">JPG / PNG / WEBP / GIF, до 5 МБ. Завантажиться після створення товару.</p>
+                <button type="button" class="btn secondary" id="pImageClear" style="margin-top: 0.35rem">
+                  Прибрати файл
+                </button>
+              </div>
+            </div>
+
+            <label>Треки</label>
+            <div class="tracks-head">
+              <span>№</span><span>Назва</span><span>Тривалість</span><span></span>
+            </div>
+            <div id="pTracksList" class="tracks-list"></div>
+            <button type="button" class="btn secondary" id="addTrackBtn" style="margin-top: 0.5rem">
+              + Додати трек
+            </button>
+
+            <button type="button" class="btn" id="createProductBtn" style="display: block; width: 100%">
+              Створити товар
+            </button>
+            <button
+              type="button"
+              class="btn secondary"
+              id="cancelEditBtn"
+              style="display: none; width: 100%"
+            >
+              Скасувати редагування
+            </button>
           </div>
           <div class="card">
             <h3>Керування</h3>
@@ -645,6 +756,12 @@
           .filter(Boolean);
       }
 
+      function productImageUrl(imageUrl) {
+        if (!imageUrl) return '';
+        if (/^https?:\/\//i.test(imageUrl)) return imageUrl;
+        return getApiUrl() + (imageUrl.startsWith('/') ? imageUrl : '/' + imageUrl);
+      }
+
       function renderProducts(list) {
         const el = document.getElementById('productsList');
         if (!list.length) {
@@ -656,10 +773,16 @@
             const id = Number(p.id);
             const title = p.record_title || p.title || 'Без назви';
             const artist = p.artist?.name || (p.performers && p.performers[0]) || '—';
+            const thumb = p.image_url
+              ? '<img class="product-thumb" src="' +
+                escapeHtml(productImageUrl(p.image_url)) +
+                '" alt="" loading="lazy" />'
+              : '<div class="product-thumb placeholder">без зображення</div>';
             return (
               '<article class="product" data-id="' +
               id +
               '">' +
+              thumb +
               '<h4>' +
               escapeHtml(title) +
               '</h4>' +
@@ -680,6 +803,11 @@
               '<button type="button" class="btn secondary" data-detail="' +
               id +
               '">Деталі</button>' +
+              (state.user?.role === 'admin'
+                ? '<button type="button" class="btn secondary" data-edit="' +
+                  id +
+                  '">Редагувати</button>'
+                : '') +
               '</div></article>'
             );
           })
@@ -689,6 +817,9 @@
         });
         el.querySelectorAll('[data-detail]').forEach((btn) => {
           btn.addEventListener('click', () => showProductDetail(Number(btn.dataset.detail)));
+        });
+        el.querySelectorAll('[data-edit]').forEach((btn) => {
+          btn.addEventListener('click', () => startEditProduct(Number(btn.dataset.edit)));
         });
       }
 
@@ -1081,16 +1212,187 @@
         }
       });
 
-      document.getElementById('createProductBtn').addEventListener('click', async () => {
-        let tracks;
-        const tracksRaw = document.getElementById('pTracks').value.trim();
-        if (tracksRaw) {
-          try {
-            tracks = JSON.parse(tracksRaw);
-          } catch {
-            return log('Невірний JSON треків', 'err');
-          }
+      const tracksListEl = document.getElementById('pTracksList');
+
+      function addTrackRow(track = {}) {
+        const row = document.createElement('div');
+        row.className = 'track-row';
+        const nextNumber = track.number ?? tracksListEl.children.length + 1;
+        row.innerHTML =
+          '<input class="track-number" type="number" min="1" value="' +
+          escapeHtml(String(nextNumber)) +
+          '" />' +
+          '<input class="track-title" placeholder="Назва треку" value="' +
+          escapeHtml(track.title || '') +
+          '" />' +
+          '<input class="track-duration" placeholder="00:03:00" value="' +
+          escapeHtml(track.duration || '') +
+          '" />' +
+          '<button type="button" class="track-remove" title="Видалити">✕</button>';
+        row.querySelector('.track-remove').addEventListener('click', () => {
+          row.remove();
+          renumberTracks();
+        });
+        tracksListEl.appendChild(row);
+      }
+
+      function renumberTracks() {
+        [...tracksListEl.querySelectorAll('.track-row')].forEach((row, idx) => {
+          const numInput = row.querySelector('.track-number');
+          if (numInput && !numInput.value) numInput.value = idx + 1;
+        });
+      }
+
+      function collectTracks() {
+        const rows = [...tracksListEl.querySelectorAll('.track-row')];
+        const tracks = [];
+        rows.forEach((row, idx) => {
+          const title = row.querySelector('.track-title').value.trim();
+          if (!title) return;
+          const number = Number(row.querySelector('.track-number').value) || idx + 1;
+          const duration = row.querySelector('.track-duration').value.trim();
+          const track = { number, title };
+          if (duration) track.duration = duration;
+          tracks.push(track);
+        });
+        return tracks;
+      }
+
+      document.getElementById('addTrackBtn').addEventListener('click', () => addTrackRow());
+      addTrackRow({ number: 1, title: 'Track 1', duration: '00:03:00' });
+
+      const imageInput = document.getElementById('pImage');
+      const imagePreview = document.getElementById('pImagePreview');
+
+      function resetImageField() {
+        imageInput.value = '';
+        imagePreview.innerHTML = 'нема<br />файлу';
+      }
+
+      imageInput.addEventListener('change', () => {
+        const file = imageInput.files && imageInput.files[0];
+        if (!file) {
+          imagePreview.innerHTML = 'нема<br />файлу';
+          return;
         }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          imagePreview.innerHTML = '<img src="' + e.target.result + '" alt="preview" />';
+        };
+        reader.readAsDataURL(file);
+      });
+
+      document.getElementById('pImageClear').addEventListener('click', resetImageField);
+
+      let editingProductId = null;
+
+      function setFormMode(product) {
+        const titleEl = document.getElementById('productFormTitle');
+        const modeEl = document.getElementById('productFormMode');
+        const createBtn = document.getElementById('createProductBtn');
+        const cancelBtn = document.getElementById('cancelEditBtn');
+        if (product) {
+          editingProductId = Number(product.id);
+          titleEl.textContent = 'Редагувати товар #' + editingProductId;
+          modeEl.hidden = false;
+          modeEl.textContent =
+            'Режим редагування. Зміни збережуться через PUT /products/' + editingProductId + '.';
+          createBtn.textContent = 'Зберегти зміни';
+          cancelBtn.style.display = 'block';
+        } else {
+          editingProductId = null;
+          titleEl.textContent = 'Створити товар';
+          modeEl.hidden = true;
+          createBtn.textContent = 'Створити товар';
+          cancelBtn.style.display = 'none';
+        }
+      }
+
+      function fillProductForm(p) {
+        document.getElementById('pRecordTitle').value = p.record_title || p.title || '';
+        document.getElementById('pMediaType').value = p.media_type || 'Vinyl';
+        document.getElementById('pPrice').value = p.price ?? '';
+        document.getElementById('pStock').value = p.stock ?? '';
+        document.getElementById('pCountry').value = p.country || '';
+        document.getElementById('pGenre').value = p.genre_title || p.genre?.name || '';
+        document.getElementById('pStyles').value = (p.styles || []).join(', ');
+        document.getElementById('pBarcode').value = p.barcode || '';
+        document.getElementById('pArticle').value = p.article || '';
+        document.getElementById('pLabel').value = p.label_title || p.label?.name || '';
+        document.getElementById('pVinylCount').value = p.vinyl_count ?? 1;
+        document.getElementById('pPerformers').value = (p.performers || []).join(', ');
+        document.getElementById('pReleaseYear').value = p.release_year ?? '';
+
+        tracksListEl.innerHTML = '';
+        const tracks = (p.tracks || [])
+          .slice()
+          .sort((a, b) => (a.number || 0) - (b.number || 0));
+        if (tracks.length) tracks.forEach((t) => addTrackRow(t));
+        else addTrackRow();
+
+        resetImageField();
+        if (p.image_url) {
+          imagePreview.innerHTML =
+            '<img src="' + productImageUrl(p.image_url) + '" alt="preview" />';
+        }
+      }
+
+      async function startEditProduct(id) {
+        try {
+          const p = await api('/products/' + id);
+          if (!p) return log('Товар #' + id + ' не знайдено', 'err');
+          fillProductForm(p);
+          setFormMode(p);
+          showPanel('admin');
+          document
+            .getElementById('panel-admin')
+            .scrollIntoView({ behavior: 'smooth', block: 'start' });
+          log('Завантажено товар #' + id + ' для редагування', 'ok');
+        } catch (e) {
+          log(e.message, 'err');
+        }
+      }
+
+      function resetProductForm() {
+        setFormMode(null);
+        tracksListEl.innerHTML = '';
+        addTrackRow({ number: 1, title: 'Track 1', duration: '00:03:00' });
+        resetImageField();
+      }
+
+      document.getElementById('cancelEditBtn').addEventListener('click', () => {
+        resetProductForm();
+        log('Редагування скасовано');
+      });
+
+      async function uploadProductImage(productId, file) {
+        if (isFileProtocol) {
+          throw new Error('Відкрийте сторінку через ' + defaultApiUrl + '/demo/app.html');
+        }
+        const form = new FormData();
+        form.append('image', file);
+        const url = getApiUrl() + '/products/' + productId + '/image';
+        const headers = {};
+        if (state.jwt) headers.Authorization = 'Bearer ' + state.jwt.replace(/^Bearer\s+/i, '');
+        const res = await fetch(url, { method: 'POST', headers, body: form });
+        const text = await res.text();
+        let data;
+        try {
+          data = text ? JSON.parse(text) : {};
+        } catch {
+          data = { message: text };
+        }
+        if (!res.ok) {
+          const msg = Array.isArray(data.message) ? data.message.join(', ') : data.message;
+          throw new Error(msg || 'HTTP ' + res.status);
+        }
+        return data;
+      }
+
+      document.getElementById('createProductBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('createProductBtn');
+        const wasEditing = editingProductId;
+        btn.disabled = true;
         try {
           const body = {
             recordTitle: document.getElementById('pRecordTitle').value.trim(),
@@ -1106,13 +1408,34 @@
             vinylCount: Number(document.getElementById('pVinylCount').value),
             performers: splitCsv(document.getElementById('pPerformers').value),
             releaseYear: Number(document.getElementById('pReleaseYear').value),
-            tracks,
+            tracks: collectTracks(),
           };
-          const p = await api('/products', { method: 'POST', body: JSON.stringify(body) });
-          log('Товар #' + p.id + ' створено', 'ok');
+          let p;
+          if (wasEditing) {
+            p = await api('/products/' + wasEditing, {
+              method: 'PUT',
+              body: JSON.stringify(body),
+            });
+            log('Товар #' + p.id + ' оновлено (треків: ' + body.tracks.length + ')', 'ok');
+          } else {
+            p = await api('/products', { method: 'POST', body: JSON.stringify(body) });
+            log('Товар #' + p.id + ' створено (треків: ' + body.tracks.length + ')', 'ok');
+          }
+
+          const file = imageInput.files && imageInput.files[0];
+          if (file) {
+            log('Завантаження зображення…');
+            const withImage = await uploadProductImage(p.id, file);
+            log('Зображення збережено: ' + (withImage.image_url || ''), 'ok');
+          }
+
+          if (wasEditing) resetProductForm();
+          else resetImageField();
           loadProducts();
         } catch (e) {
           log(e.message, 'err');
+        } finally {
+          btn.disabled = false;
         }
       });
 

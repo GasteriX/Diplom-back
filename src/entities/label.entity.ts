@@ -3,7 +3,7 @@ import { Product } from './product.entity';
 
 @Entity('labels')
 export class Label {
-  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
+  @PrimaryGeneratedColumn({ type: 'integer' })
   id!: string;
 
   @Column({ type: 'varchar', length: 180, unique: true })

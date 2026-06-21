@@ -3,7 +3,7 @@ import { Product } from './product.entity';
 
 @Entity('genres')
 export class Genre {
-  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
+  @PrimaryGeneratedColumn({ type: 'integer' })
   id!: string;
 
   @Column({ type: 'varchar', length: 120, unique: true })

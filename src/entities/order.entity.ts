@@ -14,14 +14,14 @@ import { User } from './user.entity';
 
 @Entity('orders')
 export class Order {
-  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
+  @PrimaryGeneratedColumn({ type: 'integer' })
   id!: string;
 
   @ManyToOne(() => User, (user) => user.orders, { nullable: false })
   @JoinColumn({ name: 'buyer_id' })
   buyer!: User;
 
-  @Column({ type: 'enum', enum: OrderStatus, default: OrderStatus.PENDING })
+  @Column({ type: 'varchar', default: OrderStatus.PENDING })
   status!: OrderStatus;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })

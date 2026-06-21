@@ -1,7 +1,7 @@
 {
   "name": "dipllom",
   "version": "1.0.0",
-  "description": "Стек: `Nest.js` + `TypeORM` + `MySQL`.",
+  "description": "Стек: `Nest.js` + `TypeORM` + `SQLite`.",
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -22,11 +22,11 @@
     "@nestjs/swagger": "^11.3.0",
     "@nestjs/typeorm": "^11.0.0",
     "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.11.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "dotenv": "^17.2.3",
     "hutko-node-js-sdk": "github:hutko-service/node-js-sdk",
-    "mysql2": "^3.20.0",
     "nodemailer": "^8.0.10",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
@@ -36,6 +36,8 @@
     "typeorm": "^0.3.28"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/multer": "^2.1.0",
     "@types/node": "^25.5.0",
     "@types/nodemailer": "^8.0.0",
     "@types/passport-jwt": "^4.0.1",

@@ -4,7 +4,7 @@ import { Product } from './product.entity';
 
 @Entity('order_items')
 export class OrderItem {
-  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
+  @PrimaryGeneratedColumn({ type: 'integer' })
   id!: string;
 
   @ManyToOne(() => Order, (order) => order.items, { nullable: false, onDelete: 'CASCADE' })

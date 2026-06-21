@@ -3,7 +3,7 @@ import { Product } from './product.entity';
 
 @Entity('tracks')
 export class Track {
-  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
+  @PrimaryGeneratedColumn({ type: 'integer' })
   id!: string;
 
   @ManyToOne(() => Product, (product) => product.tracks, {

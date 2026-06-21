@@ -7,10 +7,15 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiCreatedResponse,
   ApiNoContentResponse,
   ApiOkResponse,
@@ -25,6 +30,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { productImageMulterOptions } from './upload.config';
 
 @ApiTags('products')
 @Controller('products')
@@ -117,6 +123,30 @@ export class ProductsController {
     @Body() dto: UpdateProductDto,
   ) {
     return this.productsService.update(id, dto);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiOperation({ summary: 'Upload product image (cover)' })
+  @ApiParam({ name: 'id', type: Number, example: 1 })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        image: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @ApiOkResponse({ description: 'Image uploaded, product returned with image_url' })
+  @Roles(UserRole.ADMIN)
+  @Post(':id/image')
+  @UseInterceptors(FileInterceptor('image', productImageMulterOptions))
+  uploadImage(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.productsService.setImage(id, file);
   }
 
   @ApiBearerAuth()

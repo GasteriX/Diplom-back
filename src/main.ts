@@ -41,6 +41,10 @@ async function bootstrap() {
     prefix: '/demo/',
   });
 
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+    prefix: '/uploads/',
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,

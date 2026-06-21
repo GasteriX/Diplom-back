@@ -1,6 +1,12 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Like, Repository } from 'typeorm';
+import { UPLOADS_PUBLIC_PREFIX } from './upload.config';
 import { Product } from '../entities/product.entity';
 import { Artist } from '../entities/artist.entity';
 import { Genre } from '../entities/genre.entity';
@@ -266,6 +272,22 @@ export class ProductsService {
     this.logger.log(`Updated product ${id}`);
     return updatedProduct;
   }
+  async setImage(id: number, file?: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('Image file is required');
+    }
+    this.logger.log(`Setting image for product ${id}`);
+    const product = await this.productsRepo.findOne({ where: { id } });
+    if (!product) {
+      this.logger.warn(`Product ${id} not found for image upload`);
+      throw new NotFoundException('Product not found');
+    }
+    product.image_url = `${UPLOADS_PUBLIC_PREFIX}/${file.filename}`;
+    const saved = await this.productsRepo.save(product);
+    this.logger.log(`Image set for product ${id}: ${saved.image_url}`);
+    return saved;
+  }
+
   async remove(id: number) {
     this.logger.log(`Deleting product ${id}`);
     const res = await this.productsRepo.delete(id);
