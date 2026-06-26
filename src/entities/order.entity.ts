@@ -57,6 +57,27 @@ export class Order {
   @Column({ name: 'paid_at', type: 'datetime', nullable: true })
   paidAt!: Date | null;
 
+  @Column({ name: 'delivery_method', type: 'varchar', nullable: true })
+  deliveryMethod!: string | null;
+
+  @Column({ name: 'delivery_address', type: 'varchar', nullable: true })
+  deliveryAddress!: string | null;
+
+  @Column({ name: 'payment_method', type: 'varchar', nullable: true })
+  paymentMethod!: string | null;
+
+  @Column({ name: 'customer_name', type: 'varchar', nullable: true })
+  customerName!: string | null;
+
+  @Column({ name: 'customer_phone', type: 'varchar', nullable: true })
+  customerPhone!: string | null;
+
+  @Column({ name: 'customer_email', type: 'varchar', nullable: true })
+  customerEmail!: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  notes!: string | null;
+
   @OneToMany(() => OrderItem, (item) => item.order, { cascade: true })
   items!: OrderItem[];
 

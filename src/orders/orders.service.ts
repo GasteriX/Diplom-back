@@ -38,6 +38,13 @@ export class OrdersService {
       paymentId: order.paymentId,
       maskedCard: order.maskedCard,
       paidAt: order.paidAt,
+      deliveryMethod: order.deliveryMethod,
+      deliveryAddress: order.deliveryAddress,
+      paymentMethod: order.paymentMethod,
+      customerName: order.customerName,
+      customerPhone: order.customerPhone,
+      customerEmail: order.customerEmail,
+      notes: order.notes,
       items: order.items?.map((item) => ({
         id: item.id,
         productId: item.product.id,
@@ -111,6 +118,13 @@ export class OrdersService {
         shippingCost: '0.00',
         total: total.toFixed(2),
         currency: this.hutkoService.getCurrency(),
+        deliveryMethod: dto.deliveryMethod ?? null,
+        deliveryAddress: dto.deliveryAddress ?? null,
+        paymentMethod: dto.paymentMethod ?? null,
+        customerName: dto.customerName ?? null,
+        customerPhone: dto.customerPhone ?? null,
+        customerEmail: dto.customerEmail ?? null,
+        notes: dto.notes ?? null,
       });
       const persistedOrder = await manager.save(order);
 

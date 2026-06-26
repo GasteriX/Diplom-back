@@ -180,10 +180,12 @@ export class PaymentsService {
     }
 
     await this.dataSource.transaction(async (manager) => {
+      // NOTE: better-sqlite3 has no row-level locks (LockNotSupportedOnGivenDriver).
+      // SQLite serialises writers and the transaction is atomic, so no pessimistic
+      // lock is needed here.
       const lockedOrder = await manager.findOne(Order, {
         where: { id: order.id },
         relations: ['items', 'items.product'],
-        lock: { mode: 'pessimistic_write' },
       });
 
       if (!lockedOrder || lockedOrder.status === OrderStatus.PAID) {
@@ -193,7 +195,6 @@ export class PaymentsService {
       for (const item of lockedOrder.items) {
         const product = await manager.findOne(Product, {
           where: { id: item.product.id },
-          lock: { mode: 'pessimistic_write' },
         });
         if (!product || product.stock < item.quantity) {
           throw new BadRequestException(
