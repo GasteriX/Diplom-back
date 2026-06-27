@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { randomBytes } from 'crypto';
 import HutkoInstance, {
   HutkoCallbackPayload,
   HutkoCheckoutTokenResponse,
@@ -54,8 +55,14 @@ export class HutkoService {
     return (Number(amount) / 100).toFixed(2);
   }
 
+  /**
+   * Уникальный order_id для каждой платёжной попытки.
+   * Hutko не принимает повторно тот же order_id (error 1013 "Duplicate order"),
+   * поэтому добавляем временную метку + случайный суффикс.
+   */
   buildExternalOrderId(orderId: string): string {
-    return `ORDER-${orderId}`;
+    const suffix = `${Date.now().toString(36)}${randomBytes(3).toString('hex')}`;
+    return `ORDER-${orderId}-${suffix}`;
   }
 
   async createCheckoutToken(params: {

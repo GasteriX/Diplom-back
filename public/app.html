@@ -491,6 +491,14 @@
           <div class="card">
             <h3 id="productFormTitle">Створити товар</h3>
             <p class="hint" id="productFormMode" hidden></p>
+            <button
+              type="button"
+              class="btn secondary"
+              id="newProductBtn"
+              style="margin-top: 0; width: 100%"
+            >
+              ＋ Новий товар (очистити форму)
+            </button>
             <label>recordTitle *</label>
             <input id="pRecordTitle" value="Starpath" />
             <label>media_type *</label>
@@ -1360,9 +1368,41 @@
         resetImageField();
       }
 
+      function clearProductForm() {
+        setFormMode(null);
+        [
+          'pRecordTitle',
+          'pPrice',
+          'pStock',
+          'pCountry',
+          'pGenre',
+          'pStyles',
+          'pBarcode',
+          'pArticle',
+          'pLabel',
+          'pPerformers',
+          'pReleaseYear',
+        ].forEach((id) => {
+          document.getElementById(id).value = '';
+        });
+        document.getElementById('pMediaType').value = 'Vinyl';
+        document.getElementById('pVinylCount').value = '1';
+        tracksListEl.innerHTML = '';
+        addTrackRow();
+        resetImageField();
+      }
+
       document.getElementById('cancelEditBtn').addEventListener('click', () => {
         resetProductForm();
         log('Редагування скасовано');
+      });
+
+      document.getElementById('newProductBtn').addEventListener('click', () => {
+        clearProductForm();
+        document
+          .getElementById('panel-admin')
+          .scrollIntoView({ behavior: 'smooth', block: 'start' });
+        log('Форма очищена — режим створення нового товару');
       });
 
       async function uploadProductImage(productId, file) {

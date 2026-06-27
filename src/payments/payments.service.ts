@@ -40,10 +40,10 @@ export class PaymentsService {
       throw new BadRequestException('Order is not available for payment');
     }
 
-    if (!order.externalOrderId) {
-      order.externalOrderId = this.hutkoService.buildExternalOrderId(order.id);
-      await this.ordersRepo.save(order);
-    }
+    // Каждая попытка оплаты получает новый order_id, иначе Hutko вернёт
+    // "Duplicate order" (error 1013) при повторном запросе токена.
+    order.externalOrderId = this.hutkoService.buildExternalOrderId(order.id);
+    await this.ordersRepo.save(order);
 
     const amountMinor = this.hutkoService.toMinorUnits(Number(order.total));
     const orderDesc =
@@ -89,10 +89,9 @@ export class PaymentsService {
       throw new BadRequestException('Order is not available for payment');
     }
 
-    if (!order.externalOrderId) {
-      order.externalOrderId = this.hutkoService.buildExternalOrderId(order.id);
-      await this.ordersRepo.save(order);
-    }
+    // Новый order_id и для рекуррентного списания (Hutko запрещает дубли).
+    order.externalOrderId = this.hutkoService.buildExternalOrderId(order.id);
+    await this.ordersRepo.save(order);
 
     const sourceOrder = await this.ordersRepo.findOne({
       where: {
@@ -180,10 +179,11 @@ export class PaymentsService {
     }
 
     await this.dataSource.transaction(async (manager) => {
+      // better-sqlite3 не поддерживает row-level lock (LockNotSupportedOnGivenDriver).
+      // SQLite сериализует запись, а транзакция атомарна, поэтому pessimistic lock не нужен.
       const lockedOrder = await manager.findOne(Order, {
         where: { id: order.id },
         relations: ['items', 'items.product'],
-        lock: { mode: 'pessimistic_write' },
       });
 
       if (!lockedOrder || lockedOrder.status === OrderStatus.PAID) {
@@ -193,7 +193,6 @@ export class PaymentsService {
       for (const item of lockedOrder.items) {
         const product = await manager.findOne(Product, {
           where: { id: item.product.id },
-          lock: { mode: 'pessimistic_write' },
         });
         if (!product || product.stock < item.quantity) {
           throw new BadRequestException(
